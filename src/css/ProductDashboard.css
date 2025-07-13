@@ -1,4 +1,4 @@
-/* App.css */
+/* App.css 
 body {
   font-family: 'Segoe UI', sans-serif;
   background: #f3f4f6;
@@ -156,7 +156,7 @@ body {
   text-align: center;
 }
 
-/* Animations (optional: add animate.css or define below) */
+/* Animations (optional: add animate.css or define below) 
 .animated {
   animation-duration: 0.6s;
   animation-fill-mode: both;
@@ -186,7 +186,7 @@ body {
   }
 }
 
-/* Add or update in App.css */
+/* Add or update in App.css 
 
 .product-table-wrapper {
   overflow-x: auto;
@@ -263,3 +263,551 @@ body {
   opacity: 0;
   cursor: pointer;
 }
+
+/*
+
+
+/* ProductDashboard.css */
+
+/* Base Container */
+.app-container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f9f9f9;
+}
+
+/* Dashboard Title */
+.dashboard-title {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 10px 20px;
+  margin: 0 10px;
+  border: none;
+  background: #e0e0e0;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.tab.active {
+  background: #ffa726;
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Form and Controls */
+.btn {
+  padding: 8px 15px;
+  margin: 5px;
+  background-color: #29b6f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn:hover {
+  background-color: #0288d1;
+}
+
+.btn.delete {
+  background-color: #ef5350;
+}
+
+.btn.delete:hover {
+  background-color: #d32f2f;
+}
+
+.btn.export,
+.btn.import {
+  background-color: #66bb6a;
+}
+
+.btn.export:hover,
+.btn.import:hover {
+  background-color: #43a047;
+}
+
+.toggle-form {
+  background-color: #ffb74d;
+}
+
+.toggle-form:hover {
+  background-color: #fb8c00;
+}
+
+.product-form,
+form {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.product-form input,
+.product-form select,
+input {
+  padding: 8px;
+  margin: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  max-width: 400px;
+  box-sizing: border-box;
+}
+
+.search-input {
+  margin-bottom: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+}
+
+/* Tables */
+.product-table,
+.order-table,
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.product-table th,
+.order-table th,
+.product-table td,
+.order-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.product-table th,
+.order-table th {
+  background-color: #eeeeee;
+}
+
+.product-table img,
+.order-table img {
+  max-width: 60px;
+  max-height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+/* Ordered Product Highlight */
+tr.ordered-row {
+  background-color: #fff3e0 !important;
+  transition: background 0.4s;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tab {
+    margin: 5px 5px;
+    font-size: 0.9rem;
+  }
+
+  .dashboard-title {
+    font-size: 1.5rem;
+  }
+
+  .product-form input,
+  .product-form select,
+  .search-input,
+  input {
+    max-width: 100%;
+  }
+
+  .product-table th,
+  .product-table td,
+  .order-table th,
+  .order-table td {
+    font-size: 0.85rem;
+    padding: 6px;
+  }
+
+  .product-table img,
+  .order-table img {
+    max-width: 40px;
+    max-height: 40px;
+  }
+}
+
+
+/* order css ======================================================== */
+
+/* Order Table Section */
+/* Orders Container */
+.orders-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* Supplier Section */
+.orders-container h3 {
+  margin: 30px 0 10px;
+  font-size: 20px;
+  color: #333;
+  border-left: 5px solid orange;
+  padding-left: 10px;
+  font-weight: 600;
+}
+
+/* Table */
+.orders-container table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+  background-color: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Table Headers */
+.orders-container th {
+  background-color: #f8f8f8;
+  padding: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+  color: #333;
+}
+
+/* Table Cells */
+.orders-container td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+/* Image */
+.orders-container td img {
+  height: 48px;
+  width: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+/* Input for Quantity */
+.orders-container td input[type="number"] {
+  width: 60px;
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+/* Button */
+.orders-container td button {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.orders-container td button:hover {
+  background-color: #d93636;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+  .orders-container table,
+  .orders-container thead,
+  .orders-container tbody,
+  .orders-container th,
+  .orders-container td,
+  .orders-container tr {
+    display: block;
+  }
+
+  .orders-container thead {
+    display: none;
+  }
+
+  .orders-container tr {
+    margin-bottom: 16px;
+    background: #fff;
+    padding: 12px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .orders-container td {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border: none;
+    position: relative;
+  }
+
+  .orders-container td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #555;
+    margin-right: 12px;
+    flex: 1;
+  }
+
+  .orders-container td img {
+    height: 40px;
+    width: 40px;
+  }
+}
+/*  product form css ======================================= */
+
+/* Product Form Styles */
+.product-form {
+  background: white;
+  max-width: 600px;
+  margin: 30px auto;
+  padding: 30px 25px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  animation: popupIn 0.4s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+@keyframes popupIn {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.form-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-align: center;
+  color: #333;
+}
+
+.product-form input,
+.product-form select {
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.product-form input:focus,
+.product-form select:focus {
+  border-color: orange;
+}
+
+.supplier-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.remove-supplier {
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.remove-supplier:hover {
+  background: #d63636;
+}
+
+.btn {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn.add-supplier {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px dashed #aaa;
+}
+
+.btn.add-supplier:hover {
+  background: #eaeaea;
+}
+
+.btn.submit {
+  background: orange;
+  color: white;
+  font-weight: bold;
+  transition: background 0.3s ease;
+}
+
+.btn.submit:hover {
+  background: darkorange;
+}
+
+/* Responsive Form */
+@media (max-width: 600px) {
+  .product-form {
+    padding: 20px 15px;
+    width: 95%;
+  }
+
+  .supplier-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .remove-supplier {
+    align-self: flex-end;
+    margin-top: 5px;
+  }
+}
+
+
+/* supplier css ================================================================= */
+
+/* Supplier Section Styles */
+.supplier-section {
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 25px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.07);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.supplier-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.supplier-form input {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+.supplier-form input:focus {
+  border-color: orange;
+}
+
+.supplier-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.supplier-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.supplier-input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+}
+
+.supplier-input:focus {
+  border-color: orange;
+}
+
+.btn {
+  padding: 8px 14px;
+  font-size: 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.add-btn {
+  background-color: orange;
+  color: #fff;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.add-btn:hover {
+  background-color: darkorange;
+}
+
+.delete-btn {
+  background-color: #ff4d4d;
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+.delete-btn:hover {
+  background-color: #d63636;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .supplier-form {
+    flex-direction: column;
+  }
+
+  .supplier-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .delete-btn {
+    align-self: flex-end;
+    margin-top: 5px;
+  }
+}
+
