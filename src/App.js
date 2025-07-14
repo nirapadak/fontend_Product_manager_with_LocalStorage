@@ -1,298 +1,10 @@
-// import React, { useEffect, useState, useRef } from 'react';
-// import { QRCodeCanvas } from 'qrcode.react';
-// import { v4 as uuidv4 } from 'uuid';
-// import * as XLSX from 'xlsx';
-
-// import './css/ProductDashboard.css';
-// const LOCAL_KEY = 'product_data';
-
-// export default function App() {
-//   const [products, setProducts] = useState([]);
-//   const [formVisible, setFormVisible] = useState(false);
-//   const [activeTab, setActiveTab] = useState('products');
-//   const [form, setForm] = useState({ name: '', sku: '', image: '', suppliers: [{ supplierId: '', price: '' }] });
-//   const [searchSKU, setSearchSKU] = useState('');
-
-//   useEffect(() => {
-//     const data = localStorage.getItem(LOCAL_KEY);
-//     if (data) setProducts(JSON.parse(data));
-//   }, []);
-
-// const firstRenderRef = useRef(true);
-
-// useEffect(() => {
-//   if (firstRenderRef.current) {
-//     firstRenderRef.current = false;
-//     return; // skip saving on first render
-//   }
-//   localStorage.setItem(LOCAL_KEY, JSON.stringify(products));
-// }, [products]);
-
-
-  
-//   const handleAddSupplier = () => {
-//     setForm({ ...form, suppliers: [...form.suppliers, { supplierId: '', price: '' }] });
-//   };
-
-//   const handleSupplierChange = (index, field, value) => {
-//     const updatedSuppliers = [...form.suppliers];
-//     updatedSuppliers[index][field] = value;
-//     setForm({ ...form, suppliers: updatedSuppliers });
-//   };
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//     const newProduct = { id: uuidv4(), ...form, ordered: false, quantity: 1 };
-//     setProducts([...products, newProduct]);
-  
-
-
-//     setForm({ name: '', sku: '', image: '', suppliers: [{ supplierId: '', price: '' }] });
-//     setFormVisible(false);
-//   };
-
-//   const handleDelete = (id) => {
-//     setProducts(products.filter(p => p.id !== id));
-//   };
-
-
-
-//   const handleOrder = (id) => {
-//   setProducts(products.map(p => {
-//     if (p.id === id) {
-//       // Find the supplier with the lowest price
-//       const cheapest = p.suppliers.reduce((min, curr) =>
-//         parseFloat(curr.price) < parseFloat(min.price) ? curr : min
-//       );
-
-//       return {
-//         ...p,
-//         ordered: true,
-//         orderedSupplierId: cheapest.supplierId,
-//         orderedPrice: cheapest.price,
-//       };
-//     }
-//     return p;
-//   }));
-
-//   setActiveTab('orders');
-// };
-
-
-//   const handleEdit = (id, updatedField) => {
-//     setProducts(products.map(p => p.id === id ? { ...p, ...updatedField } : p));
-//   };
-
-//   const handleExport = () => {
-//     const dataToExport = products.map(p => ({
-//       Name: p.name,
-//       SKU: p.sku,
-//       Image: p.image,
-//       Suppliers: p.suppliers.map(s => `${s.supplierId}:${s.price}`).join(', ')
-//     }));
-
-//     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-//     const workbook = XLSX.utils.book_new();
-//     XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
-//     XLSX.writeFile(workbook, 'product_backup.xlsx');
-//   };
-
-//   const handleImport = (e) => {
-//     const file = e.target.files[0];
-//     if (!file) return;
-
-//     const reader = new FileReader();
-//     reader.onload = (evt) => {
-//       const data = new Uint8Array(evt.target.result);
-//       const workbook = XLSX.read(data, { type: 'array' });
-//       const sheetName = workbook.SheetNames[0];
-//       const sheet = workbook.Sheets[sheetName];
-//       const importedData = XLSX.utils.sheet_to_json(sheet);
-
-//       const formatted = importedData.map(item => ({
-//         id: uuidv4(),
-//         name: item.Name || '',
-//         sku: item.SKU || '',
-//         image: item.Image || '',
-//         ordered: false,
-//         quantity: 1,
-//         suppliers: (item.Suppliers || '').split(',').map(s => {
-//           const [supplierId, price] = s.split(':');
-//           return { supplierId: supplierId.trim(), price: price.trim() };
-//         })
-//       }));
-
-//       setProducts([...products, ...formatted]);
-//     };
-
-//     reader.readAsArrayBuffer(file);
-//   };
-
-//   const filtered = products.filter(p => p.sku.toLowerCase().includes(searchSKU.toLowerCase()));
-//   const orderedProducts = products.filter(p => p.ordered);
-
-
-//   const groupedOrders = orderedProducts.reduce((acc, product) => {
-//   const sid = product.orderedSupplierId;
-//   if (!acc[sid]) acc[sid] = [];
-//   acc[sid].push({ ...product, price: product.orderedPrice });
-//   return acc;
-// }, {});
-
-
-//   const handleQuantityChange = (id, value) => {
-//     setProducts(products.map(p => p.id === id ? { ...p, quantity: Number(value) } : p));
-//   };
-
-//   const handleRemoveOrder = (id) => {
-//     setProducts(products.map(p => p.id === id ? { ...p, ordered: false, quantity: 1 } : p));
-//   };
-
-//   return (
-//     <div className="app-container">
-//       <h1 className="dashboard-title">📦 Product Manager Dashboard</h1>
-
-//       <div className="tabs">
-//         <button onClick={() => setActiveTab('products')} className={`tab ${activeTab === 'products' ? 'active' : ''}`}>📋 Products</button>
-//         <button onClick={() => setActiveTab('orders')} className={`tab ${activeTab === 'orders' ? 'active' : ''}`}>🧾 Orders by Supplier</button>
-//       </div>
-
-//       {activeTab === 'products' && (
-//         <>
-//           <input type="text" placeholder="🔍 Search by SKU..." value={searchSKU} onChange={e => setSearchSKU(e.target.value)} className="search-input" />
-
-//           <div className="text-right mb-4">
-//             <button onClick={() => setFormVisible(!formVisible)} className="btn toggle-form">
-//               {formVisible ? 'Hide Create Form' : '➕ Create Product'}
-//             </button>
-//             <button onClick={handleExport} className="btn export">⬇ Export Excel</button>
-          
-//             <label className="btn import">
-//               ⬆ Import Excel
-//               <input type="file" accept=".xlsx,.xls" onChange={handleImport} hidden />
-//               </label>
-              
-//           </div>
-
-//           {formVisible && (
-//             <form onSubmit={handleSubmit} className="product-form animated fadeIn">
-//               <div className="form-group">
-//                 <input placeholder="Product Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" />
-//                 <input placeholder="SKU" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="input" />
-//                 <input placeholder="Image URL" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} className="input" />
-//               </div>
-
-//               {form.suppliers.map((s, i) => (
-//                 <div key={i} className="supplier-input">
-//                   <input placeholder="Supplier ID" value={s.supplierId} onChange={(e) => handleSupplierChange(i, 'supplierId', e.target.value)} className="input" />
-//                   <input placeholder="Price" value={s.price} onChange={(e) => handleSupplierChange(i, 'price', e.target.value)} className="input" />
-//                 </div>
-//               ))}
-
-//               <div className="button-group">
-//                 <button type="button" onClick={handleAddSupplier} className="btn add">+ Add Supplier</button>
-//                 <button type="submit" className="btn submit">✔ Create Product</button>
-//               </div>
-//             </form>
-//           )}
-
-//           <div className="product-table-wrapper">
-//             <table className="product-table">
-//               <thead>
-//                 <tr>
-//                   <th>Image</th>
-//                   <th>Name</th>
-//                   <th>SKU</th>
-//                   <th>Suppliers</th>
-//                   <th>QR</th>
-//                   <th>Actions</th>
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {filtered.map((product) => (
-//                   <tr key={product.id} className={product.ordered ? 'ordered' : ''}>
-//                     <td><img src={product.image} alt={product.name} className="table-img" /></td>
-//                     <td>
-//                       <input value={product.name} onChange={(e) => handleEdit(product.id, { name: e.target.value })} className="input table-edit" />
-//                     </td>
-//                     <td>{product.sku}</td>
-//                     <td>
-//                       {product.suppliers.map((s, i) => (
-//                         <div key={i} className="supplier">{s.supplierId} - ${s.price}</div>
-//                       ))}
-//                     </td>
-//                     <td><QRCodeCanvas value={product.sku} size={48} /></td>
-//                     <td>
-//                       <button onClick={() => handleOrder(product.id)} className="btn order">🚚</button>
-//                       <button onClick={() => handleDelete(product.id)} className="btn delete">🗑</button>
-//                     </td>
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             </table>
-//           </div>
-//         </>
-//       )}
-
-//       {activeTab === 'orders' && (
-//         <div className="orders-wrapper">
-//           {Object.keys(groupedOrders).length === 0 ? (
-//             <p>No orders yet.</p>
-//           ) : (
-//             Object.entries(groupedOrders).map(([supplierId, orders]) => (
-//               <div key={supplierId} className="supplier-orders">
-//                 <h3>Supplier: {supplierId}</h3>
-//                 <table className="order-table">
-//                   <thead>
-//                     <tr>
-//                       <th>Image</th>
-//                       <th>Name</th>
-//                       <th>SKU</th>
-//                       <th>Quantity</th>
-//                       <th>Remove</th>
-//                     </tr>
-//                   </thead>
-//                   <tbody>
-//                     {orders.map((order, i) => (
-//                       <tr key={i}>
-//                         <td><img src={order.image} alt={order.name} className="table-img" /></td>
-//                         <td>{order.name}</td>
-//                         <td>{order.sku}</td>
-//                         <td>
-//                           <input
-//                             type="number"
-//                             min="1"
-//                             value={order.quantity}
-//                             onChange={(e) => handleQuantityChange(order.id, e.target.value)}
-//                             className="input table-edit"
-//                           />
-//                         </td>
-                    
-//                         <td>
-//                           <button onClick={() => handleRemoveOrder(order.id)} className="btn delete">✖</button>
-//                         </td>
-//                       </tr>
-//                     ))}
-//                   </tbody>
-//                 </table>
-//               </div>
-//             ))
-//           )}
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
-
-
-// Full updated React code with supplier CRUD and selectable suppliers in product creation
 
 import React, { useEffect, useState, useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { v4 as uuidv4 } from 'uuid';
 import * as XLSX from 'xlsx';
 import './css/ProductDashboard.css';
-  import jsPDF from 'jspdf';
+import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const LOCAL_KEY_PRODUCTS = 'product_data';
@@ -302,7 +14,25 @@ export default function App() {
   const [products, setProducts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [formVisible, setFormVisible] = useState(false);
-  const [supplierForm, setSupplierForm] = useState({ name: '', id: '' });
+  const [supplierForm, setSupplierForm] = useState({
+  name: '',
+  shopName: '',
+  contact: '',
+  address: '',
+  email: '',
+  id: ''
+  });
+  
+  const [editingSupplierId, setEditingSupplierId] = useState(null);
+const [editSupplierForm, setEditSupplierForm] = useState({
+  name: '',
+  shopName: '',
+  contact: '',
+  address: '',
+  email: ''
+});
+
+
   const [form, setForm] = useState({ name: '', sku: '', image: '', suppliers: [{ supplierId: '', price: '' }] });
   const [activeTab, setActiveTab] = useState('products');
   const [searchSKU, setSearchSKU] = useState('');
@@ -370,12 +100,41 @@ export default function App() {
   };
 
   const handleAddSupplier = (e) => {
-    e.preventDefault();
-    if (supplierForm.name.trim()) {
-      setSuppliers(prev => [...prev, { id: uuidv4(), name: supplierForm.name.trim() }]);
-      setSupplierForm({ name: '', id: '' });
-    }
-  };
+  e.preventDefault();
+  if (supplierForm.name.trim()) {
+    setSuppliers(prev => [
+      ...prev,
+      {
+        id: uuidv4(),
+        name: supplierForm.name.trim(),
+        shopName: supplierForm.shopName.trim(),
+        contact: supplierForm.contact.trim(),
+        address: supplierForm.address.trim(),
+        email: supplierForm.email.trim()
+      }
+    ]);
+    setSupplierForm({ name: '', shopName: '', contact: '', address: '', email: '', id: '' });
+  }
+};
+
+  
+  const handleStartEditSupplier = (supplier) => {
+  setEditingSupplierId(supplier.id);
+  setEditSupplierForm({
+    name: supplier.name,
+    shopName: supplier.shopName,
+    contact: supplier.contact,
+    address: supplier.address,
+    email: supplier.email
+  });
+};
+
+  const handleSaveEditedSupplier = () => {
+  setSuppliers(suppliers.map(s => s.id === editingSupplierId ? { ...s, ...editSupplierForm } : s));
+  setEditingSupplierId(null);
+  setEditSupplierForm({ name: '', shopName: '', contact: '', address: '', email: '' });
+};
+
 
   const handleDeleteSupplier = (id) => {
     const inUse = products.some(product =>
@@ -463,56 +222,113 @@ export default function App() {
 
   // export order PDF create button function ==============================================================
 
-
-const exportOrdersToPDF = () => {
+  
+ const exportOrdersToPDF = async () => {
   const doc = new jsPDF();
-  let y = 10;
 
-  Object.entries(groupedOrders).forEach(([sid, orders], index) => {
+  let isFirstPage = true;
+
+  for (const [sid, orders] of Object.entries(groupedOrders)) {
+    if (!isFirstPage) doc.addPage();
+    isFirstPage = false;
+
     const supplier = suppliers.find(s => s.id === sid);
     const supplierName = supplier?.name || `Supplier ${sid}`;
-    const tableData = [];
 
-    let totalQuantity = 0;
-    let totalPrice = 0;
-
-    orders.forEach((o, i) => {
-      const qty = Number(o.quantity);
-      const price = Number(o.price);
-      const subtotal = qty * price;
-
-      tableData.push([
-        i + 1,
-        o.name,
-        o.sku,
-        qty,
-        `$${price.toFixed(2)}`,
-        `$${subtotal.toFixed(2)}`
-      ]);
-
-      totalQuantity += qty;
-      totalPrice += subtotal;
-    });
-
-    if (index !== 0) doc.addPage();
-
+    // Title & Supplier Details
     doc.setFontSize(16);
-    doc.text(`Supplier: ${supplierName}`, 14, y);
+    doc.text(`Order Invoice Record`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.text(`Supplier: ${supplierName}`, 14, 22);
+    if (supplier) {
+      doc.text(`Contact: ${supplier.contact}`, 14, 28);
+      doc.text(`Shop: ${supplier.shopName}`, 14, 34);
+      doc.text(`Address: ${supplier.address}`, 14, 40);
+      doc.text(`Email: ${supplier.email}`, 14, 46);
+    }
+
+    let totalQty = 0;
+    let totalAmount = 0;
+
+    const loadedRows = await Promise.all(
+      orders.map(async (o, index) => {
+        const imgBase64 = await loadImageBase64(o.image);
+        const qty = Number(o.quantity);
+        const unitPrice = Number(o.price);
+        const total = qty * unitPrice;
+        totalQty += qty;
+        totalAmount += total;
+        return [
+          index + 1,
+          { image: imgBase64 },
+          o.name,
+          o.sku,
+          qty,
+          ``,
+          ``
+        ];
+      })
+    );
 
     autoTable(doc, {
-      startY: y + 6,
-      head: [['#', 'Name', 'SKU', 'Qty', 'Unit Price', 'Total']],
-      body: tableData,
+      startY: 52,
+      head: [['SL', 'Image', 'Product Name', 'SKU', 'Qty', 'Unit Price', 'Total']],
+      body: loadedRows,
       theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 2 },
+      columnStyles: {
+        0: { cellWidth: 10 },  // SL
+        1: { cellWidth: 16 },  // Image
+        2: { cellWidth: 40 },  // Product Name
+        3: { cellWidth: 30 },  // SKU
+        4: { cellWidth: 10 },  // Qty
+        5: { cellWidth: 20 },  // Unit Price
+        6: { cellWidth: 20 },  // Total
+      },
+      didDrawCell: (data) => {
+        if (data.column.index === 1 && data.cell.section === 'body') {
+          const imageObj = data.cell.raw;
+          if (imageObj && imageObj.image) {
+            doc.addImage(
+              imageObj.image,
+              'JPEG',
+             data.cell.x,
+          data.cell.y,
+          data.cell.width,
+          data.cell.height
+            );
+          }
+        }
+      }
     });
 
-    const finalY = doc.lastAutoTable.finalY || 10;
-    doc.setFontSize(12);
-    doc.text(`Total Quantity: ${totalQuantity}`, 14, finalY + 10);
-    doc.text(`Total Price: $${totalPrice.toFixed(2)}`, 14, finalY + 16);
-  });
+    const finalY = doc.lastAutoTable.finalY || 60;
+    doc.setFontSize(10);
+    doc.text(`Total Quantity: ${totalQty}`, 14, finalY + 10);
+    doc.text(`Total Price: $${totalAmount.toFixed(2)}`, 14, finalY + 16);
+  }
 
-  doc.save('supplier_orders_report.pdf');
+  doc.save('All_Supplier_Orders.pdf');
+};
+
+// Helper function
+const loadImageBase64 = (url) => {
+  return new Promise((resolve) => {
+    if (!url) return resolve('');
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg'));
+    };
+    img.onerror = () => resolve('');
+    img.src = url;
+  });
 };
 
   
@@ -547,8 +363,8 @@ const exportAllOrdersPDF = () => {
         o.name,
         o.sku,
         qty,
-        `$${unitPrice.toFixed(2)}`,
-        `$${total.toFixed(2)}`
+        ``,
+        ``
       ];
     });
 
@@ -572,6 +388,25 @@ const exportAllOrdersPDF = () => {
   doc.save('All_Supplier_Orders.pdf');
 };
 
+  // min product in supplier min proudct table ===================================
+
+  //  qr code download =============================================================
+
+  const qrRefs = useRef({}); // Object to store refs for each product
+
+  const downloadQRCode = (sku) => {
+    const canvas = qrRefs.current[sku];
+    if (!canvas) return;
+    const pngUrl = canvas.toDataURL("image/png");
+    const downloadLink = document.createElement("a");
+    downloadLink.href = pngUrl;
+    downloadLink.download = `${sku}_QRCode.png`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  };
+                
+                
 
   return (
     <div className="app-container">
@@ -657,76 +492,125 @@ const exportAllOrdersPDF = () => {
 
           )}
 
-          <table className="product-table">
-            <thead>
-              <tr>
-                <th>Image</th>
-                <th>Name</th>
-                <th>SKU</th>
-                <th>Suppliers</th>
-                <th>QR</th>
-                 <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(p => (
-                <tr key={p.id}>
-                  <td><img src={p.image} alt={p.name} /></td>
-                  <td><input value={p.name} onChange={e => handleEditProduct(p.id, { name: e.target.value })} /></td>
-                  <td>{p.sku}</td>
-                  <td>{p.suppliers.map(s => {
-                    const found = suppliers.find(sup => sup.id === s.supplierId);
-                    return <div key={s.supplierId}>{found ? found.name : 'Unknown'} - ${s.price}</div>;
-                  })}</td>
-                  <td><QRCodeCanvas value={p.sku} size={48} /></td>
-                  <td>
-  <span className={`order-status ${p.ordered ? 'active' : 'inactive'}`}>
-    {p.ordered ? '❌ Ordered' : '✅ Not Ordered'}
-  </span>
-</td>
+          
 
-                  <td>
-                    <button onClick={() => handleOrder(p.id)}>🚚</button>
-                    <button onClick={() => handleDeleteProduct(p.id)}>🗑</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+           <table className="product-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Image</th>
+          <th>Name</th>
+          <th>SKU</th>
+          <th>Suppliers</th>
+          <th>QR</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {filtered.map((p, index) => {
+          const supplierData = p.suppliers.map(s => {
+            const found = suppliers.find(sup => sup.id === s.supplierId);
+            return {
+              name: found ? found.name : 'Unknown',
+              price: s.price
+            };
+          });
+
+          const minPrice = Math.min(...supplierData.map(s => s.price));
+
+          return (
+            <tr key={p.id}>
+              <td><h4>{index + 1}</h4></td>
+              <td><img src={p.image} alt={p.name} style={{ width: '50px', height: '50px' }} /></td>
+              <td><input value={p.name} onChange={e => handleEditProduct(p.id, { name: e.target.value })} /></td>
+              <td>{p.sku}</td>
+              <td>
+                <table className="supplier-inner-table">
+                  <tbody>
+                    {supplierData.map((s, idx) => (
+                      <tr key={idx}>
+                        <td className='supplierTBno'>{idx + 1}</td>
+                        <td className='supplierTBname'>{s.name}</td>
+                        <td  style={{
+                          backgroundColor: s.price === minPrice ? 'lightgreen' : 'transparent',
+                          fontWeight: s.price === minPrice ? 'bold' : 'normal',
+                          borderRadius: '4px',
+                          padding: '2px 6px'
+                        }}>
+                          ${s.price}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </td>
+              <td onClick={() => downloadQRCode(p.sku)} style={{ cursor: 'pointer' }}>
+                <QRCodeCanvas
+                  value={p.sku}
+                  size={48}
+                  ref={(el) => { if (el) qrRefs.current[p.sku] = el.canvas }}
+                />
+                <div style={{ fontSize: '12px' }}>Click to Download</div>
+              </td>
+              <td>
+                <span className={`order-status ${p.ordered ? 'active' : 'inactive'}`}>
+                  {p.ordered ? '❌ Ordered' : '✅ Not Ordered'}
+                </span>
+              </td>
+              <td>
+                <button className='productOrderBtn' onClick={() => handleOrder(p.id)}>🚚</button>
+                <button className='productDeleteBtn' onClick={() => handleDeleteProduct(p.id)}>🗑</button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
         </>
       )}
 
       {activeTab === 'suppliers' && (
-        <div className="supplier-section">
+       <div className="supplier-section">
   <form onSubmit={handleAddSupplier} className="supplier-form">
-    <input
-      placeholder="Supplier Name"
-      value={supplierForm.name}
-      onChange={e => setSupplierForm({ ...supplierForm, name: e.target.value })}
-      required
-    />
+    <input placeholder="Supplier Name" value={supplierForm.name} onChange={e => setSupplierForm({ ...supplierForm, name: e.target.value })} required />
+    <input placeholder="Shop Name" value={supplierForm.shopName} onChange={e => setSupplierForm({ ...supplierForm, shopName: e.target.value })} required />
+    <input placeholder="Contact Number" value={supplierForm.contact} onChange={e => setSupplierForm({ ...supplierForm, contact: e.target.value })} required />
+    <input placeholder="Address" value={supplierForm.address} onChange={e => setSupplierForm({ ...supplierForm, address: e.target.value })} required />
+    <input placeholder="Email" value={supplierForm.email} onChange={e => setSupplierForm({ ...supplierForm, email: e.target.value })} required />
     <button type="submit" className="btn add-btn">➕ Add Supplier</button>
   </form>
 
-  <ul className="supplier-list">
-    {suppliers.map(s => (
-      <li key={s.id} className="supplier-item">
-        <input
-          value={s.name}
-          onChange={e => handleEditSupplier(s.id, e.target.value)}
-          className="supplier-input"
-        />
-        <button
-          onClick={() => handleDeleteSupplier(s.id)}
-          className="btn delete-btn"
-        >
-          🗑 Delete
-        </button>
-      </li>
-    ))}
-  </ul>
+  <div className="supplier-grid">
+  {suppliers.map(s => (
+    <div key={s.id} className="supplier-card">
+      {editingSupplierId === s.id ? (
+        <>
+          <input value={editSupplierForm.name} onChange={e => setEditSupplierForm({ ...editSupplierForm, name: e.target.value })} />
+          <input value={editSupplierForm.shopName} onChange={e => setEditSupplierForm({ ...editSupplierForm, shopName: e.target.value })} />
+          <input value={editSupplierForm.contact} onChange={e => setEditSupplierForm({ ...editSupplierForm, contact: e.target.value })} />
+          <input value={editSupplierForm.address} onChange={e => setEditSupplierForm({ ...editSupplierForm, address: e.target.value })} />
+          <input value={editSupplierForm.email} onChange={e => setEditSupplierForm({ ...editSupplierForm, email: e.target.value })} />
+          <button onClick={handleSaveEditedSupplier} className="btn save-btn">✔ Save</button>
+          <button onClick={() => setEditingSupplierId(null)} className="btn cancel-btn">✖ Cancel</button>
+        </>
+      ) : (
+        <>
+          <h3>{s.name}</h3>
+          <p><strong>Shop:</strong> {s.shopName}</p>
+          <p><strong>Contact:</strong> {s.contact}</p>
+          <p><strong>Address:</strong> {s.address}</p>
+          <p><strong>Email:</strong> {s.email}</p>
+          <button onClick={() => handleStartEditSupplier(s)} className="btn edit-btn">✏ Edit</button>
+          <button onClick={() => handleDeleteSupplier(s.id)} className="btn delete-btn">🗑 Delete</button>
+        </>
+      )}
+    </div>
+  ))}
 </div>
+
+</div>
+
 
       )}
 
