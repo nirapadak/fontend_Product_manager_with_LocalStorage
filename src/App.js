@@ -461,9 +461,87 @@ const handleStartScanner = () => {
              <label className="btn import">
                ⬆ Import Excel
                <input type="file" accept=".xlsx,.xls" onChange={handleImport} hidden />
-               </label>   
+          </label>  
+          
 
-          {formVisible && (
+
+
+
+{formVisible && (
+  <div className="dialog-overlay" onClick={() => { setFormVisible(false); setEditingProductId(null); }}>
+    <div className="dialog-box" onClick={(e) => e.stopPropagation()}>
+      <button className="dialog-close-btn" onClick={() => { setFormVisible(false); setEditingProductId(null); }}>✖</button>
+      <form onSubmit={handleProductSubmit} className="product-form">
+        <h2 className="form-title">{editingProductId ? '✏️ Update Product' : '➕ Add New Product'}</h2>
+
+        <input
+          placeholder="Name"
+          value={form.name}
+          onChange={e => setForm({ ...form, name: e.target.value })}
+          required
+        />
+        <input
+          placeholder="SKU"
+          value={form.sku}
+          onChange={e => setForm({ ...form, sku: e.target.value })}
+          required
+        />
+        <input
+          placeholder="Image URL"
+          value={form.image}
+          onChange={e => setForm({ ...form, image: e.target.value })}
+        />
+        <input
+          placeholder="Unit of Product"
+          value={form.unit}
+          onChange={e => setForm({ ...form, unit: e.target.value })}
+        />
+
+        <label>Suppliers & Prices:</label>
+        {form.suppliers.map((s, i) => (
+          <div key={i} className="supplier-row">
+            <select
+              value={s.supplierId}
+              onChange={e => handleSupplierChange(i, 'supplierId', e.target.value)}
+              required
+            >
+              <option value="">Select Supplier</option>
+              {suppliers.map(sup => (
+                <option key={sup.id} value={sup.id}>{sup.name}</option>
+              ))}
+            </select>
+
+            <input
+              type="number"
+              placeholder="Price"
+              value={s.price}
+              onChange={e => handleSupplierChange(i, 'price', e.target.value)}
+              required
+              min="0"
+            />
+
+            {form.suppliers.length > 1 && (
+              <button type="button" className="remove-supplier" onClick={() => {
+                const updated = [...form.suppliers];
+                updated.splice(i, 1);
+                setForm({ ...form, suppliers: updated });
+              }}>❌</button>
+            )}
+          </div>
+        ))}
+
+        <button type="button" className="btn add-supplier" onClick={handleAddSupplierField}>+ Add Supplier</button>
+        <button type="submit" className="btn submit">{editingProductId ? '✔ Update Product' : '✔ Create Product'}</button>
+      </form>
+    </div>
+  </div>
+)}
+
+
+
+          
+
+          {/* {formVisible && (
            <form onSubmit={handleProductSubmit} className="product-form">
   <h2 className="form-title">➕ Add New Product</h2>
 
@@ -525,14 +603,15 @@ const handleStartScanner = () => {
 
   <button type="button" className="btn add-supplier" onClick={handleAddSupplierField}>+ Add Supplier</button>
 
-              {/* <button type="submit" className="btn submit">✔ Create Product</button> */}
-              <button onClick={() => { setFormVisible(!formVisible); setEditingProductId(null); }} className="btn toggle-form">
-  {formVisible ? 'Hide Form' : editingProductId ? '✏️ Update Product' : '➕ Create Product'}
+           
+              <button type="submit" className="btn submit">
+  {editingProductId ? '✔ Update Product' : '✔ Create Product'}
 </button>
+
 
 </form>
 
-          )}
+          )} */}
 
           
 
@@ -547,19 +626,32 @@ const handleStartScanner = () => {
           <th>QR</th>
           <th>Status</th>
           <th>Actions</th>
+          <th>Delete</th>
         </tr>
       </thead>
       <tbody>
         {filtered.map((p, index) => {
-          const supplierData = p.suppliers.map(s => {
-            const found = suppliers.find(sup => sup.id === s.supplierId);
-            return {
-              name: found ? found.name : 'Unknown',
-              price: s.price
-            };
-          });
+          // const supplierData = p.suppliers.map(s => {
+          //   const found = suppliers.find(sup => sup.id === s.supplierId);
+          //   return {
+          //     name: found ? found.name : 'Unknown',
+          //     price: s.price
+          //   };
+          // });
 
-          const minPrice = Math.min(...supplierData.map(s => s.price));
+          // const minPrice = Math.min(...supplierData.map(s => s.price));
+             const supplierData = p.suppliers.map(s => {
+      const found = suppliers.find(sup => sup.id === s.supplierId);
+      return {
+        name: found ? found.name : 'Unknown',
+        price: parseFloat(s.price)
+      };
+    });
+
+    if (supplierData.length === 0) return <span>No Supplier</span>;
+
+    const minSupplier = supplierData.reduce((min, curr) => curr.price < min.price ? curr : min);
+
 
           return (
             <tr key={p.id}>
@@ -568,25 +660,42 @@ const handleStartScanner = () => {
               <td><input value={p.name} onChange={e => handleEditProduct(p.id, { name: e.target.value })} /></td>
               <td>{p.sku}</td>
               <td>
-                <table className="supplier-inner-table">
-                  <tbody>
-                    {supplierData.map((s, idx) => (
-                      <tr key={idx}>
-                        <td className='supplierTBno'>{idx + 1}</td>
-                        <td className='supplierTBname'>{s.name}</td>
-                        <td  style={{
-                          backgroundColor: s.price === minPrice ? 'lightgreen' : 'transparent',
-                          fontWeight: s.price === minPrice ? 'bold' : 'normal',
-                          borderRadius: '4px',
-                          padding: '2px 6px'
-                        }}>
-                          ${s.price}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </td>
+               
+  <table className="supplier-inner-table">
+    <tbody>
+      {(() => {
+        const supplierData = p.suppliers.map(s => {
+          const found = suppliers.find(sup => sup.id === s.supplierId);
+          return {
+            name: found ? found.name : 'Unknown',
+            price: parseFloat(s.price)
+          };
+        });
+
+        if (supplierData.length === 0) return <tr><td>No Supplier</td></tr>;
+
+        const minPrice = Math.min(...supplierData.map(s => s.price));
+
+        return supplierData.map((s, idx) => (
+          <tr key={idx}>
+            <td className='supplierTBno'>{idx + 1}</td>
+            <td className='supplierTBname'>{s.name}</td>
+            <td style={{
+              backgroundColor: s.price === minPrice ? 'lightgreen' : 'transparent',
+              fontWeight: s.price === minPrice ? 'bold' : 'normal',
+              borderRadius: '4px',
+              padding: '2px 6px'
+            }}>
+              {s.price}/-
+            </td>
+          </tr>
+        ));
+      })()}
+    </tbody>
+  </table>
+</td>
+
+              
             
               <td style={{ cursor: 'pointer' }}>
   <QRCodeCanvas
@@ -624,7 +733,10 @@ const handleStartScanner = () => {
     ✏️ Update
   </button>
 
-  <button
+  
+              </td>
+              <td>
+                <button
     className="productDeleteBtn"
     style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
     onClick={() => {
@@ -633,9 +745,9 @@ const handleStartScanner = () => {
       }
     }}
   >
-    🗑 Delete
+    🗑
   </button>
-</td>
+              </td>
 
             </tr>
           );

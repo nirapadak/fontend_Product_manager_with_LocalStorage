@@ -531,6 +531,7 @@ tr.ordered-row {
 
 /* delet and roder product btn */
 .productOrderBtn,
+.productUpdateBtn,
 .productDeleteBtn {
   padding: 6px 10px;
   border: none;
@@ -548,6 +549,12 @@ tr.ordered-row {
 
 .productOrderBtn:hover {
   background-color: #218838;
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.productUpdateBtn:hover {
+  background-color: #c3d3c7;
   transform: scale(1.1);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
@@ -584,3 +591,41 @@ tr.ordered-row {
 }
 
 
+/* product create dialog ================================================== */
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.dialog-box {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 500px;
+  max-width: 90%;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.dialog-box h2 {
+  margin-top: 0;
+}
+
+.dialog-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
