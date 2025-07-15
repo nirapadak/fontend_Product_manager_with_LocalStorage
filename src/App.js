@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 import './css/ProductDashboard.css';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const LOCAL_KEY_PRODUCTS = 'product_data';
 const LOCAL_KEY_SUPPLIERS = 'supplier_data';
@@ -306,7 +307,8 @@ const [editSupplierForm, setEditSupplierForm] = useState({
     const finalY = doc.lastAutoTable.finalY || 60;
     doc.setFontSize(10);
     doc.text(`Total Quantity: ${totalQty}`, 14, finalY + 10);
-    doc.text(`Total Price: $${totalAmount.toFixed(2)}`, 14, finalY + 16);
+    doc.text("Total Price:");
+    // doc.text(`Total Price: $${totalAmount.toFixed(2)}`, 14, finalY + 16);
   }
 
   doc.save('All_Supplier_Orders.pdf');
@@ -333,60 +335,7 @@ const loadImageBase64 = (url) => {
 
   
   
-  //  all pdf ====================================================================================
-
-
-const exportAllOrdersPDF = () => {
-  const doc = new jsPDF();
-  let isFirstPage = true;
-
-  Object.entries(groupedOrders).forEach(([sid, orders], index) => {
-    if (!isFirstPage) doc.addPage();
-    isFirstPage = false;
-
-    const supplier = suppliers.find(s => s.id === sid);
-    const supplierName = supplier?.name || `Supplier ${sid}`;
-
-    let totalQty = 0;
-    let totalAmount = 0;
-
-    const rows = orders.map((o, i) => {
-      const qty = Number(o.quantity);
-      const unitPrice = Number(o.price);
-      const total = qty * unitPrice;
-
-      totalQty += qty;
-      totalAmount += total;
-
-      return [
-        i + 1,
-        o.name,
-        o.sku,
-        qty,
-        ``,
-        ``
-      ];
-    });
-
-    doc.setFontSize(16);
-    doc.text(`Supplier: ${supplierName}`, 14, 14);
-
-    autoTable(doc, {
-      startY: 20,
-      head: [['#', 'Product Name', 'SKU', 'Qty', 'Unit Price', 'Total']],
-      body: rows,
-      theme: 'grid',
-      styles: { fontSize: 10 },
-    });
-
-    const finalY = doc.lastAutoTable.finalY || 30;
-    doc.setFontSize(12);
-    doc.text(`Total Quantity: ${totalQty}`, 14, finalY + 10);
-    doc.text(`Total Price: $${totalAmount.toFixed(2)}`, 14, finalY + 18);
-  });
-
-  doc.save('All_Supplier_Orders.pdf');
-};
+  
 
   // min product in supplier min proudct table ===================================
 
@@ -405,6 +354,38 @@ const exportAllOrdersPDF = () => {
     downloadLink.click();
     document.body.removeChild(downloadLink);
   };
+
+  //  product search by Qr code scan ===================================================
+  
+
+
+const [scannerVisible, setScannerVisible] = useState(false);
+
+const handleScanSuccess = (decodedText) => {
+  setSearchSKU(decodedText);
+  setScannerVisible(false);
+};
+
+const handleStartScanner = () => {
+  setScannerVisible(true);
+  setTimeout(() => {
+    const scanner = new Html5QrcodeScanner(
+      "qr-reader",
+      { fps: 10, qrbox: 250 },
+      false
+    );
+    scanner.render(
+      (decodedText) => {
+        handleScanSuccess(decodedText);
+        scanner.clear();
+      },
+      (errorMessage) => {
+        // console.log(`Scan error: ${errorMessage}`);
+      }
+    );
+  }, 100);
+};
+
                 
                 
 
@@ -421,6 +402,10 @@ const exportAllOrdersPDF = () => {
       {activeTab === 'products' && (
         <>
           <input placeholder="Search by SKU..." value={searchSKU} onChange={e => setSearchSKU(e.target.value)} className="search-input" />
+          <button className="btn scan-btn" onClick={handleStartScanner}>📷 Scan QR</button>
+{scannerVisible && <div id="qr-reader" style={{ width: '300px', margin: '10px auto' }}></div>}
+
+           
           <button onClick={() => setFormVisible(!formVisible)} className="btn toggle-form">
             {formVisible ? 'Hide Form' : '➕ Create Product'}
           </button>
@@ -616,16 +601,13 @@ const exportAllOrdersPDF = () => {
 
       {activeTab === 'orders' && (
         <div className="orders-container">
-          <button onClick={exportAllOrdersPDF} className="btn export">
+          <button onClick={exportOrdersToPDF} className="btn export">
   📄 Print All Orders PDF
 </button>
 
   {Object.entries(groupedOrders).map(([sid, orders]) => (
     <div key={sid}>
       <h3>Supplier: {suppliers.find(s => s.id === sid)?.name || sid}</h3>
-      <button className="btn export" onClick={exportOrdersToPDF}>
-  📄 Export PDF
-</button>
 
       <table>
         <thead>
