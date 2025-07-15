@@ -15,6 +15,8 @@ export default function App() {
   const [products, setProducts] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [formVisible, setFormVisible] = useState(false);
+  const [editingProductId, setEditingProductId] = useState(null);
+
   const [supplierForm, setSupplierForm] = useState({
   name: '',
   shopName: '',
@@ -66,13 +68,32 @@ const [editSupplierForm, setEditSupplierForm] = useState({
     setForm({ ...form, suppliers: updated });
   };
 
+  // const handleProductSubmit = (e) => {
+  //   e.preventDefault();
+  //   const newProduct = { id: uuidv4(), ...form, ordered: false, quantity: 1 };
+  //   setProducts(prev => [...prev, newProduct]);
+  //   setForm({ name: '', sku: '', image: '', unit:'',suppliers: [{ supplierId: '', price: '' }] });
+  //   setFormVisible(false);
+  // };
+
+
   const handleProductSubmit = (e) => {
-    e.preventDefault();
+  e.preventDefault();
+
+  if (editingProductId) {
+    // Update existing product
+    setProducts(products.map(p => p.id === editingProductId ? { ...p, ...form } : p));
+    setEditingProductId(null);
+  } else {
+    // Create new product
     const newProduct = { id: uuidv4(), ...form, ordered: false, quantity: 1 };
     setProducts(prev => [...prev, newProduct]);
-    setForm({ name: '', sku: '', image: '', unit:'',suppliers: [{ supplierId: '', price: '' }] });
-    setFormVisible(false);
-  };
+  }
+
+  setForm({ name: '', sku: '', image: '', unit: '', suppliers: [{ supplierId: '', price: '' }] });
+  setFormVisible(false);
+};
+
 
   const handleDeleteProduct = (id) => {
     setProducts(products.filter(p => p.id !== id));
@@ -93,7 +114,7 @@ const [editSupplierForm, setEditSupplierForm] = useState({
       }
       return p;
     }));
-    setActiveTab('orders');
+    // setActiveTab('orders');
   };
 
   const handleEditProduct = (id, updatedField) => {
@@ -115,6 +136,27 @@ const [editSupplierForm, setEditSupplierForm] = useState({
       }
     ]);
     setSupplierForm({ name: '', shopName: '', contact: '', address: '', email: '', id: '' });
+  }
+  };
+  
+  const handleProductEditStart = (product) => {
+  setEditingProductId(product.id);
+  setForm({
+    name: product.name,
+    sku: product.sku,
+    image: product.image,
+    unit: product.unit,
+    suppliers: product.suppliers
+  });
+  setFormVisible(true);
+};
+
+
+  
+  const handleProductUpdate = (id) => {
+  const updatedName = prompt('Enter new product name:');
+  if (updatedName) {
+    handleEditProduct(id, { name: updatedName });
   }
 };
 
@@ -483,7 +525,11 @@ const handleStartScanner = () => {
 
   <button type="button" className="btn add-supplier" onClick={handleAddSupplierField}>+ Add Supplier</button>
 
-  <button type="submit" className="btn submit">✔ Create Product</button>
+              {/* <button type="submit" className="btn submit">✔ Create Product</button> */}
+              <button onClick={() => { setFormVisible(!formVisible); setEditingProductId(null); }} className="btn toggle-form">
+  {formVisible ? 'Hide Form' : editingProductId ? '✏️ Update Product' : '➕ Create Product'}
+</button>
+
 </form>
 
           )}
@@ -557,10 +603,40 @@ const handleStartScanner = () => {
                   {p.ordered ? '❌ Ordered' : '✅ Not Ordered'}
                 </span>
               </td>
-              <td>
+              {/* <td>
                 <button className='productOrderBtn' onClick={() => handleOrder(p.id)}>🚚</button>
                 <button className='productDeleteBtn' onClick={() => handleDeleteProduct(p.id)}>🗑</button>
-              </td>
+              </td> */}
+              <td>
+  <button
+    className="productOrderBtn"
+    style={{ fontSize: '18px', padding: '6px 12px' }}
+    onClick={() => handleOrder(p.id)}
+  >
+    🚚 Order
+  </button>
+
+  <button
+    className="productUpdateBtn"
+    style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
+    onClick={() => handleProductEditStart(p)}
+  >
+    ✏️ Update
+  </button>
+
+  <button
+    className="productDeleteBtn"
+    style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
+    onClick={() => {
+      if (window.confirm('Are you sure you want to delete this product?')) {
+        handleDeleteProduct(p.id);
+      }
+    }}
+  >
+    🗑 Delete
+  </button>
+</td>
+
             </tr>
           );
         })}
