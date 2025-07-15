@@ -34,7 +34,7 @@ const [editSupplierForm, setEditSupplierForm] = useState({
 });
 
 
-  const [form, setForm] = useState({ name: '', sku: '', image: '', suppliers: [{ supplierId: '', price: '' }] });
+  const [form, setForm] = useState({ name: '', sku: '', image: '', unit:'', suppliers: [{ supplierId: '', price: '' }] });
   const [activeTab, setActiveTab] = useState('products');
   const [searchSKU, setSearchSKU] = useState('');
 
@@ -70,7 +70,7 @@ const [editSupplierForm, setEditSupplierForm] = useState({
     e.preventDefault();
     const newProduct = { id: uuidv4(), ...form, ordered: false, quantity: 1 };
     setProducts(prev => [...prev, newProduct]);
-    setForm({ name: '', sku: '', image: '', suppliers: [{ supplierId: '', price: '' }] });
+    setForm({ name: '', sku: '', image: '', unit:'',suppliers: [{ supplierId: '', price: '' }] });
     setFormVisible(false);
   };
 
@@ -265,6 +265,7 @@ const [editSupplierForm, setEditSupplierForm] = useState({
           { image: imgBase64 },
           o.name,
           o.sku,
+          o.unit,
           qty,
           ``,
           ``
@@ -274,18 +275,19 @@ const [editSupplierForm, setEditSupplierForm] = useState({
 
     autoTable(doc, {
       startY: 52,
-      head: [['SL', 'Image', 'Product Name', 'SKU', 'Qty', 'Unit Price', 'Total']],
+      head: [['SL', 'Image', 'Product Name', 'SKU', 'Unit', 'Qty', 'Unit Price', 'Total']],
       body: loadedRows,
       theme: 'grid',
       styles: { fontSize: 8, cellPadding: 2 },
       columnStyles: {
         0: { cellWidth: 10 },  // SL
-        1: { cellWidth: 16 },  // Image
+        1: { cellWidth: 14 },  // Image
         2: { cellWidth: 40 },  // Product Name
         3: { cellWidth: 30 },  // SKU
-        4: { cellWidth: 10 },  // Qty
-        5: { cellWidth: 20 },  // Unit Price
-        6: { cellWidth: 20 },  // Total
+        4: { cellWidth: 30 },  // Unit
+        5: { cellWidth: 10 },  // Qty
+        6: { cellWidth: 20 },  // Unit Price
+        7: { cellWidth: 20 },  // Total
       },
       didDrawCell: (data) => {
         if (data.column.index === 1 && data.cell.section === 'body') {
@@ -307,11 +309,12 @@ const [editSupplierForm, setEditSupplierForm] = useState({
     const finalY = doc.lastAutoTable.finalY || 60;
     doc.setFontSize(10);
     doc.text(`Total Quantity: ${totalQty}`, 14, finalY + 10);
-    doc.text("Total Price:");
+    doc.text("Total Price:", 14, finalY + 16);
+    // doc.text('', 14, finalY + 16);
     // doc.text(`Total Price: $${totalAmount.toFixed(2)}`, 14, finalY + 16);
   }
 
-  doc.save('All_Supplier_Orders.pdf');
+  doc.save('invoice.pdf');
 };
 
 // Helper function
@@ -335,7 +338,7 @@ const loadImageBase64 = (url) => {
 
   
   
-  
+
 
   // min product in supplier min proudct table ===================================
 
@@ -345,15 +348,18 @@ const loadImageBase64 = (url) => {
 
   const downloadQRCode = (sku) => {
     const canvas = qrRefs.current[sku];
-    if (!canvas) return;
-    const pngUrl = canvas.toDataURL("image/png");
-    const downloadLink = document.createElement("a");
-    downloadLink.href = pngUrl;
-    downloadLink.download = `${sku}_QRCode.png`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
+    if (!canvas) {
+      alert('QR Code not found!');
+      return;
+    }
+    const pngUrl = canvas.toDataURL('image/png/jpg');
+    const link = document.createElement('a');
+    link.href = pngUrl;
+    link.download = `${sku}_QRCode.jpg`;
+    link.click();
   };
+
+
 
   //  product search by Qr code scan ===================================================
   
@@ -435,6 +441,11 @@ const handleStartScanner = () => {
     placeholder="Image URL"
     value={form.image}
     onChange={e => setForm({ ...form, image: e.target.value })}
+              />
+               <input
+    placeholder="Unit of Product"
+    value={form.unit}
+    onChange={e => setForm({ ...form, unit: e.target.value })}
   />
 
   <label>Suppliers & Prices:</label>
@@ -485,7 +496,7 @@ const handleStartScanner = () => {
           <th>#</th>
           <th>Image</th>
           <th>Name</th>
-          <th>SKU</th>
+                <th>SKU</th>
           <th>Suppliers</th>
           <th>QR</th>
           <th>Status</th>
@@ -530,14 +541,17 @@ const handleStartScanner = () => {
                   </tbody>
                 </table>
               </td>
-              <td onClick={() => downloadQRCode(p.sku)} style={{ cursor: 'pointer' }}>
-                <QRCodeCanvas
-                  value={p.sku}
-                  size={48}
-                  ref={(el) => { if (el) qrRefs.current[p.sku] = el.canvas }}
-                />
-                <div style={{ fontSize: '12px' }}>Click to Download</div>
-              </td>
+            
+              <td style={{ cursor: 'pointer' }}>
+  <QRCodeCanvas
+    value={p.sku}
+    size={48}
+    ref={(el) => { if (el) qrRefs.current[p.sku] = el; }}
+  />
+  <div style={{ fontSize: '12px' }} onClick={() => downloadQRCode(p.sku)}>
+    Click to Download
+  </div>
+</td>
               <td>
                 <span className={`order-status ${p.ordered ? 'active' : 'inactive'}`}>
                   {p.ordered ? '❌ Ordered' : '✅ Not Ordered'}
