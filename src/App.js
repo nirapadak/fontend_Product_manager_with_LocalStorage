@@ -7,7 +7,7 @@ import './css/ProductDashboard.css';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import ProfileTab from '../src/components/ProfileTab.jsx';
+import ProfileTab from './components/ProfileTab.jsx';
 
 const LOCAL_KEY_PRODUCTS = 'product_data';
 const LOCAL_KEY_SUPPLIERS = 'supplier_data';
@@ -22,7 +22,15 @@ export default function App() {
 
   const [qrPopupVisible, setQrPopupVisible] = useState(false);
 const [qrDownloadCount, setQrDownloadCount] = useState(1);
-const [selectedQrData, setSelectedQrData] = useState(null);
+  const [selectedQrData, setSelectedQrData] = useState(null);
+  
+
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [selectedBuyer, setSelectedBuyer] = useState(null);
+  const [profiles, setProfiles] = useState([]);
+  
+
+
 
 
   const [supplierForm, setSupplierForm] = useState({
@@ -76,13 +84,7 @@ const [editSupplierForm, setEditSupplierForm] = useState({
     setForm({ ...form, suppliers: updated });
   };
 
-  // const handleProductSubmit = (e) => {
-  //   e.preventDefault();
-  //   const newProduct = { id: uuidv4(), ...form, ordered: false, quantity: 1 };
-  //   setProducts(prev => [...prev, newProduct]);
-  //   setForm({ name: '', sku: '', image: '', unit:'',suppliers: [{ supplierId: '', price: '' }] });
-  //   setFormVisible(false);
-  // };
+
 
 
   const handleProductSubmit = (e) => {
@@ -159,14 +161,16 @@ const [editSupplierForm, setEditSupplierForm] = useState({
   setFormVisible(true);
 };
 
-
+  // ✅ Load Profiles from Local Storage on Mount
+  const getProfileData =() => {
+   
+    const storedProfiles = localStorage.getItem('profiles');
+    if (storedProfiles) {
+      setProfiles(JSON.parse(storedProfiles));
+    }
+  };
   
-  const handleProductUpdate = (id) => {
-  const updatedName = prompt('Enter new product name:');
-  if (updatedName) {
-    handleEditProduct(id, { name: updatedName });
-  }
-};
+
 
   
   const handleStartEditSupplier = (supplier) => {
@@ -187,22 +191,15 @@ const [editSupplierForm, setEditSupplierForm] = useState({
 };
 
 
-  const handleDeleteSupplier = (id) => {
-    const inUse = products.some(product =>
-      product.suppliers.some(s => s.supplierId === id)
-    );
 
-    if (inUse) {
-      alert('❌ Cannot delete: Supplier is used in products!');
-      return;
-    }
 
-    setSuppliers(suppliers.filter(s => s.id !== id));
-  };
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleEditSupplier = (id, name) => {
-    setSuppliers(suppliers.map(s => s.id === id ? { ...s, name } : s));
-  };
+const filteredSuppliers = suppliers.filter(supplier =>
+  supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  supplier.contact.toLowerCase().includes(searchQuery.toLowerCase())
+);
+
 
   const filtered = products.filter(p => p.sku.toLowerCase().includes(searchSKU.toLowerCase()));
   const orderedProducts = products.filter(p => p.ordered);
@@ -225,7 +222,8 @@ const [editSupplierForm, setEditSupplierForm] = useState({
   // emprot and exprot ==========================================================
 
      const handleExport = () => {
-    const dataToExport = products.map(p => ({
+       const dataToExport = products.map(p => ({
+      id:p.id,
       Name: p.name,
       SKU: p.sku,
       Image: p.image,
@@ -238,45 +236,68 @@ const [editSupplierForm, setEditSupplierForm] = useState({
     XLSX.writeFile(workbook, 'product_backup.xlsx');
   };
 
+  
+
   const handleImport = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const file = e.target.files[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const data = new Uint8Array(evt.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      const importedData = XLSX.utils.sheet_to_json(sheet);
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    const data = new Uint8Array(evt.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const importedData = XLSX.utils.sheet_to_json(sheet);
 
-      const formatted = importedData.map(item => ({
+    const formattedProducts = importedData.map(item => {
+      const suppliersList = (item.Suppliers || '').split(',').map(s => {
+        const [supplierId, price] = s.split(':').map(x => x.trim());
+
+        // Check if supplier exists
+        const exists = suppliers.find(sup => sup.id === supplierId);
+
+        // If not exist, add placeholder supplier
+        if (!exists && supplierId) {
+          setSuppliers(prev => [...prev, {
+            id: supplierId,
+            name: `Imported Supplier (${supplierId})`,
+            shopName: '',
+            contact: '',
+            address: '',
+            email: ''
+          }]);
+        }
+
+        return { supplierId, price };
+      });
+
+      return {
         id: uuidv4(),
         name: item.Name || '',
         sku: item.SKU || '',
         image: item.Image || '',
+        unit: item.Unit || '',
         ordered: false,
         quantity: 1,
-        suppliers: (item.Suppliers || '').split(',').map(s => {
-          const [supplierId, price] = s.split(':');
-          return { supplierId: supplierId.trim(), price: price.trim() };
-        })
-      }));
+        suppliers: suppliersList
+      };
+    });
 
-      setProducts([...products, ...formatted]);
-    };
-
-    reader.readAsArrayBuffer(file);
+    setProducts(prev => [...prev, ...formattedProducts]);
   };
+
+  reader.readAsArrayBuffer(file);
+};
+
 
 
 
   // export order PDF create button function ==============================================================
 
-  
- const exportOrdersToPDF = async () => {
-  const doc = new jsPDF();
 
+  const exportOrdersToPDF = async (buyer) => {
+  const doc = new jsPDF();
   let isFirstPage = true;
 
   for (const [sid, orders] of Object.entries(groupedOrders)) {
@@ -286,19 +307,33 @@ const [editSupplierForm, setEditSupplierForm] = useState({
     const supplier = suppliers.find(s => s.id === sid);
     const supplierName = supplier?.name || `Supplier ${sid}`;
 
-    // Title & Supplier Details
+    // --- Title ---
     doc.setFontSize(16);
+    // doc.setFont('helvetica', 'bold');
     doc.text(`Order Invoice Record`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
 
+    // --- Supplier Info (Left) ---
     doc.setFontSize(10);
     doc.text(`Supplier: ${supplierName}`, 14, 22);
     if (supplier) {
-      doc.text(`Contact: ${supplier.contact}`, 14, 28);
       doc.text(`Shop: ${supplier.shopName}`, 14, 34);
+      doc.text(`Contact: ${supplier.contact}`, 14, 28);
       doc.text(`Address: ${supplier.address}`, 14, 40);
       doc.text(`Email: ${supplier.email}`, 14, 46);
     }
 
+    // --- Buyer Info (Right) ---
+    if (buyer) {
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const rightX = pageWidth - 80;
+      doc.text(`Buyer: ${buyer.name}`, rightX, 22);
+      doc.text(`Company: ${buyer.company}`, rightX, 34);
+      doc.text(`Contact: ${buyer.phone}`, rightX, 28);
+      doc.text(`Address: ${buyer.address}`, rightX, 46);
+      doc.text(`Email: ${buyer.email}`, rightX, 40);
+    }
+
+    // --- Product Table ---
     let totalQty = 0;
     let totalAmount = 0;
 
@@ -317,8 +352,8 @@ const [editSupplierForm, setEditSupplierForm] = useState({
           o.sku,
           o.unit,
           qty,
-          ``,
-          ``
+          // unitPrice.toFixed(2),
+          // total.toFixed(2)
         ];
       })
     );
@@ -330,14 +365,14 @@ const [editSupplierForm, setEditSupplierForm] = useState({
       theme: 'grid',
       styles: { fontSize: 8, cellPadding: 2 },
       columnStyles: {
-        0: { cellWidth: 10 },  // SL
-        1: { cellWidth: 14 },  // Image
-        2: { cellWidth: 40 },  // Product Name
-        3: { cellWidth: 30 },  // SKU
-        4: { cellWidth: 30 },  // Unit
-        5: { cellWidth: 10 },  // Qty
-        6: { cellWidth: 20 },  // Unit Price
-        7: { cellWidth: 20 },  // Total
+        0: { cellWidth: 10 },
+        1: { cellWidth: 14 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 30 },
+        5: { cellWidth: 10 },
+        6: { cellWidth: 20 },
+        7: { cellWidth: 20 },
       },
       didDrawCell: (data) => {
         if (data.column.index === 1 && data.cell.section === 'body') {
@@ -346,10 +381,10 @@ const [editSupplierForm, setEditSupplierForm] = useState({
             doc.addImage(
               imageObj.image,
               'JPEG',
-             data.cell.x,
-          data.cell.y,
-          data.cell.width,
-          data.cell.height
+              data.cell.x,
+              data.cell.y,
+              data.cell.width,
+              data.cell.height
             );
           }
         }
@@ -358,18 +393,17 @@ const [editSupplierForm, setEditSupplierForm] = useState({
 
     const finalY = doc.lastAutoTable.finalY || 60;
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    // doc.text(`Total Quantity: ${totalQty}`, 14, finalY + 10);
     doc.text(`Total Quantity: ${totalQty}`, 14, finalY + 10);
-    doc.text("Total Price:", 14, finalY + 16);
-    // doc.text('', 14, finalY + 16);
-    // doc.text(`Total Price: $${totalAmount.toFixed(2)}`, 14, finalY + 16);
+    // doc.text(`Total Amount: $${totalAmount.toFixed(2)}`, 14, finalY + 16);
+    doc.text(`Total Amount: `, 14, finalY + 16);
   }
 
-   doc.save('invoice.pdf');
-   
+  doc.save('invoice.pdf');
 
-  //   all order remove after pdf create
-
-    setProducts(prev =>
+  // Reset ordered products after PDF generation
+  setProducts(prev =>
     prev.map(p => ({
       ...p,
       ordered: false,
@@ -378,8 +412,16 @@ const [editSupplierForm, setEditSupplierForm] = useState({
       orderedPrice: undefined
     }))
   );
-   
 };
+
+
+
+
+
+
+
+
+
 
 // Helper function
 const loadImageBase64 = (url) => {
@@ -399,9 +441,28 @@ const loadImageBase64 = (url) => {
     img.src = url;
   });
 };
+  
+  // supplier delete confirm custom dialog function =========================================
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+const [supplierToDelete, setSupplierToDelete] = useState(null);
+  
+  const handleDeleteClick = (supplier) => {
+  setSupplierToDelete(supplier);
+  setShowDeleteConfirm(true);
+  };
+  
+const confirmDelete = () => {
+  setSuppliers(suppliers.filter(s => s.id !== supplierToDelete.id));
+  setShowDeleteConfirm(false);
+  setSupplierToDelete(null);
+};
+  
+  const cancelDelete = () => {
+  setShowDeleteConfirm(false);
+  setSupplierToDelete(null);
+};
 
-  
-  
+// supplier delete confirm custom dialog function ====================below=====================
 
 
   // min product in supplier min proudct table ===================================
@@ -525,8 +586,11 @@ const handleStartScanner = () => {
   
   const [showSupplierForm, setShowSupplierForm] = useState(false);
 
-const handleExportSuppliers = () => {
+
+  
+  const handleExportSuppliers = () => {
   const dataToExport = suppliers.map(s => ({
+    ID: s.id,
     Name: s.name,
     ShopName: s.shopName,
     Contact: s.contact,
@@ -540,7 +604,11 @@ const handleExportSuppliers = () => {
   XLSX.writeFile(workbook, 'suppliers_backup.xlsx');
 };
 
-const handleImportSuppliers = (e) => {
+
+
+  
+
+  const handleImportSuppliers = (e) => {
   const file = e.target.files[0];
   if (!file) return;
 
@@ -553,7 +621,7 @@ const handleImportSuppliers = (e) => {
     const importedData = XLSX.utils.sheet_to_json(sheet);
 
     const formatted = importedData.map(item => ({
-      id: uuidv4(),
+      id: item.ID || uuidv4(),
       name: item.Name || '',
       shopName: item.ShopName || '',
       contact: item.Contact || '',
@@ -561,11 +629,12 @@ const handleImportSuppliers = (e) => {
       email: item.Email || ''
     }));
 
-    setSuppliers([...suppliers, ...formatted]);
+    setSuppliers(prev => [...prev, ...formatted]);
   };
 
   reader.readAsArrayBuffer(file);
 };
+
   // ============================================================================================
 
 
@@ -682,79 +751,7 @@ const handleImportSuppliers = (e) => {
 
 
 
-          
-
-          {/* {formVisible && (
-           <form onSubmit={handleProductSubmit} className="product-form">
-  <h2 className="form-title">➕ Add New Product</h2>
-
-  <input
-    placeholder="Name"
-    value={form.name}
-    onChange={e => setForm({ ...form, name: e.target.value })}
-    required
-  />
-  <input
-    placeholder="SKU"
-    value={form.sku}
-    onChange={e => setForm({ ...form, sku: e.target.value })}
-    required
-  />
-  <input
-    placeholder="Image URL"
-    value={form.image}
-    onChange={e => setForm({ ...form, image: e.target.value })}
-              />
-               <input
-    placeholder="Unit of Product"
-    value={form.unit}
-    onChange={e => setForm({ ...form, unit: e.target.value })}
-  />
-
-  <label>Suppliers & Prices:</label>
-  {form.suppliers.map((s, i) => (
-    <div key={i} className="supplier-row">
-      <select
-        value={s.supplierId}
-        onChange={e => handleSupplierChange(i, 'supplierId', e.target.value)}
-        required
-      >
-        <option value="">Select Supplier</option>
-        {suppliers.map(sup => (
-          <option key={sup.id} value={sup.id}>{sup.name}</option>
-        ))}
-      </select>
-
-      <input
-        type="number"
-        placeholder="Price"
-        value={s.price}
-        onChange={e => handleSupplierChange(i, 'price', e.target.value)}
-        required
-        min="0"
-      />
-
-      {form.suppliers.length > 1 && (
-        <button type="button" className="remove-supplier" onClick={() => {
-          const updated = [...form.suppliers];
-          updated.splice(i, 1);
-          setForm({ ...form, suppliers: updated });
-        }}>❌</button>
-      )}
-    </div>
-  ))}
-
-  <button type="button" className="btn add-supplier" onClick={handleAddSupplierField}>+ Add Supplier</button>
-
-           
-              <button type="submit" className="btn submit">
-  {editingProductId ? '✔ Update Product' : '✔ Create Product'}
-</button>
-
-
-</form>
-
-          )} */}
+    
 
           
 
@@ -949,7 +946,16 @@ const handleImportSuppliers = (e) => {
     <input type="file" accept=".xlsx,.xls" onChange={handleImportSuppliers} hidden />
   </label>
           </div>
-          
+          <input
+  type="text"
+  placeholder="Search by name or contact"
+  value={searchQuery}
+  onChange={(e) => setSearchQuery(e.target.value)}
+  className="p-2 border rounded"
+/>
+
+
+
 
           <button className="btn toggle-form" onClick={() => setShowSupplierForm(!showSupplierForm)}>
   {showSupplierForm ? 'Hide Form' : '➕ Create Supplier'}
@@ -967,25 +973,18 @@ const handleImportSuppliers = (e) => {
       <input placeholder="Email" value={supplierForm.email} onChange={e => setSupplierForm({ ...supplierForm, email: e.target.value })} required />
 
       <div className="popup-buttons">
-        <button onClick={(e) => { handleAddSupplier(e); setShowSupplierForm(false); }}>✔ Add Supplier</button>
-        <button onClick={() => setShowSupplierForm(false)}>✖ Cancel</button>
+        <button className="btn" onClick={(e) => { handleAddSupplier(e); setShowSupplierForm(false); }}>✔ Add Supplier</button>
+        <button className="btn delete-btn" onClick={() => setShowSupplierForm(false)}>✖ Cancel</button>
       </div>
     </div>
   </div>
 )}
 
 
-  {/* <form onSubmit={handleAddSupplier} className="supplier-form">
-    <input placeholder="Supplier Name" value={supplierForm.name} onChange={e => setSupplierForm({ ...supplierForm, name: e.target.value })} required />
-    <input placeholder="Shop Name" value={supplierForm.shopName} onChange={e => setSupplierForm({ ...supplierForm, shopName: e.target.value })} required />
-    <input placeholder="Contact Number" value={supplierForm.contact} onChange={e => setSupplierForm({ ...supplierForm, contact: e.target.value })} required />
-    <input placeholder="Address" value={supplierForm.address} onChange={e => setSupplierForm({ ...supplierForm, address: e.target.value })} required />
-    <input placeholder="Email" value={supplierForm.email} onChange={e => setSupplierForm({ ...supplierForm, email: e.target.value })} required />
-    <button type="submit" className="btn add-btn">➕ Add Supplier</button>
-  </form> */}
 
-  <div className="supplier-grid">
-  {suppliers.map(s => (
+          <div className="supplier-grid">
+   
+  {filteredSuppliers.map(s => (
     <div key={s.id} className="supplier-card">
       {editingSupplierId === s.id ? (
         <>
@@ -1005,7 +1004,9 @@ const handleImportSuppliers = (e) => {
           <p><strong>Address:</strong> {s.address}</p>
           <p><strong>Email:</strong> {s.email}</p>
           <button onClick={() => handleStartEditSupplier(s)} className="btn edit-btn">✏ Edit</button>
-          <button onClick={() => handleDeleteSupplier(s.id)} className="btn delete-btn">🗑 Delete</button>
+            {/* <button onClick={() => handleDeleteSupplier(s.id)} className="btn delete-btn">🗑 Delete</button> */}
+               <button onClick={() => handleDeleteClick(s)} className="btn delete-btn">Delete</button>
+            
         </>
       )}
     </div>
@@ -1017,9 +1018,27 @@ const handleImportSuppliers = (e) => {
 
       )}
 
+      {showDeleteConfirm && (
+  <div className="custom-popup-overlay">
+    <div className="custom-popup">
+      <p>Are you sure you want to delete <strong>Supplier -: {supplierToDelete?.name}</strong>?</p>
+      <div className="mt-2 flex gap-2 justify-end">
+        <button onClick={cancelDelete} className="btn edit-btn">Cancel</button>
+        <button onClick={confirmDelete} className="btn delete-btn">Delete</button>
+      </div>
+    </div>
+  </div>
+)}
+
       {activeTab === 'orders' && (
         <div className="orders-container">
-          <button onClick={exportOrdersToPDF} className="btn export">
+          {/* <button onClick={exportOrdersToPDF} className="btn export">
+  📄 Print All Orders PDF
+</button> */}
+          <button onClick={() => {
+            getProfileData()
+            setShowPrintDialog(true)
+          }} className="btn export">
   📄 Print All Orders PDF
 </button>
 
@@ -1056,6 +1075,44 @@ const handleImportSuppliers = (e) => {
 
       )}
 
+
+      {showPrintDialog && (
+  <div className="custom-popup-overlay">
+    <div className="custom-popup">
+      <h3 className="text-lg font-bold mb-2">Select Buyer</h3>
+      <select
+        className="w-full border p-2 rounded mb-4"
+        value={selectedBuyer?.id || ''}
+        onChange={(e) => {
+          const buyer = profiles.find(p => p.id === e.target.value);
+          setSelectedBuyer(buyer);
+        }}
+      >
+        <option value="">-- Select Buyer --</option>
+        {profiles.map(p => (
+          <option key={p.id} value={p.id}>{p.name} ({p.company})</option>
+        ))}
+      </select>
+
+      <div className="flex justify-end gap-2">
+        <button onClick={() => setShowPrintDialog(false)} className="btn delete-btn">Cancel</button>
+        <button
+          onClick={() => {
+            if (selectedBuyer) {
+              exportOrdersToPDF(selectedBuyer);
+              setShowPrintDialog(false);
+            } else {
+              alert('Please select a buyer');
+            }
+          }}
+          className="btn"
+        >
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
 
      

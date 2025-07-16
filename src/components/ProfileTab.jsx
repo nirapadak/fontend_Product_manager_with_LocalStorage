@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from 'uuid';
+import '../css/ProfileCard.css'
 
 export default function ProfileTab({ activeTab, setActiveTab }) {
 
@@ -82,8 +83,8 @@ export default function ProfileTab({ activeTab, setActiveTab }) {
                 <input placeholder="Company" value={profileForm.company} onChange={e => setProfileForm({ ...profileForm, company: e.target.value })} />
 
                 <div className="popup-buttons">
-                  <button onClick={handleAddProfile}>✔ Save</button>
-                  <button onClick={() => { setShowProfileForm(false); setEditingProfileId(null); }}>✖ Cancel</button>
+                  <button className="btn" onClick={handleAddProfile}>✔ Save</button>
+                  <button className="btn delete-btn" onClick={() => { setShowProfileForm(false); setEditingProfileId(null); }}>✖ Cancel</button>
                 </div>
               </div>
             </div>
@@ -91,16 +92,21 @@ export default function ProfileTab({ activeTab, setActiveTab }) {
 
           <div className="profile-grid">
             {profiles.map(p => (
-              <div key={p.id} className="supplier-card">
-                <img src={p.profilePic || 'https://via.placeholder.com/100'} alt="Profile" style={{ width: '100px', height: '100px', borderRadius: '50%' }} />
-                <h3>{p.name}</h3>
-                <p><strong>Address:</strong> {p.address}</p>
-                <p><strong>Email:</strong> {p.email}</p>
-                <p><strong>Phone:</strong> {p.phone}</p>
-                <p><strong>Company:</strong> {p.company}</p>
-                <button onClick={() => handleEditProfile(p)} className="btn edit-btn">✏ Edit</button>
-                <button onClick={() => handleDeleteProfile(p.id)} className="btn delete-btn">🗑 Delete</button>
-              </div>
+             <div key={p.id} className="supplier-card">
+  <img src={p.profilePic || 'https://via.placeholder.com/100'} alt="Profile" />
+  <div className="supplier-card-content">
+    <h3>{p.name}</h3>
+    <p><strong>Address:</strong> {p.address}</p>
+    <p><strong>Email:</strong> {p.email}</p>
+    <p><strong>Phone:</strong> {p.phone}</p>
+    <p><strong>Company:</strong> {p.company}</p>
+    <div>
+      <button onClick={() => handleEditProfile(p)} className="btn edit-btn">✏ Edit</button>
+      <button onClick={() => handleDeleteProfile(p.id)} className="btn delete-btn">🗑 Delete</button>
+    </div>
+  </div>
+</div>
+
             ))}
           </div>
         </div>
