@@ -7,6 +7,7 @@ import './css/ProductDashboard.css';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import ProfileTab from '../src/components/ProfileTab.jsx';
 
 const LOCAL_KEY_PRODUCTS = 'product_data';
 const LOCAL_KEY_SUPPLIERS = 'supplier_data';
@@ -16,6 +17,13 @@ export default function App() {
   const [suppliers, setSuppliers] = useState([]);
   const [formVisible, setFormVisible] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
+
+// Qr code downlaod poppup============================================
+
+  const [qrPopupVisible, setQrPopupVisible] = useState(false);
+const [qrDownloadCount, setQrDownloadCount] = useState(1);
+const [selectedQrData, setSelectedQrData] = useState(null);
+
 
   const [supplierForm, setSupplierForm] = useState({
   name: '',
@@ -356,7 +364,21 @@ const [editSupplierForm, setEditSupplierForm] = useState({
     // doc.text(`Total Price: $${totalAmount.toFixed(2)}`, 14, finalY + 16);
   }
 
-  doc.save('invoice.pdf');
+   doc.save('invoice.pdf');
+   
+
+  //   all order remove after pdf create
+
+    setProducts(prev =>
+    prev.map(p => ({
+      ...p,
+      ordered: false,
+      quantity: 1,
+      orderedSupplierId: undefined,
+      orderedPrice: undefined
+    }))
+  );
+   
 };
 
 // Helper function
@@ -434,17 +456,138 @@ const handleStartScanner = () => {
   }, 100);
 };
 
-                
-                
+  //Qr code download ======================= number of ========================
+  
+
+  
+
+  const generateQrPdf = (product, count) => {
+  const doc = new jsPDF('portrait', 'mm', 'a4');
+  const qrCanvas = qrRefs.current[product.sku];
+  if (!qrCanvas) {
+    alert('QR Code not found!');
+    return;
+  }
+
+  const imgData = qrCanvas.toDataURL('image/png');
+
+  const qrPerRow = 4;
+  const qrPerColumn = 5;
+  const totalPerPage = qrPerRow * qrPerColumn;
+
+  const cellWidth = 50;
+  const cellHeight = 50;
+
+  const qrSize = 30;
+
+  const startX = 10;
+  const startY = 10;
+
+  for (let i = 0; i < count; i++) {
+    const pageIndex = Math.floor(i / totalPerPage);
+    const positionInPage = i % totalPerPage;
+    const row = Math.floor(positionInPage / qrPerRow);
+    const col = positionInPage % qrPerRow;
+
+    if (positionInPage === 0 && i !== 0) doc.addPage();
+
+    const x = startX + col * cellWidth;
+    const y = startY + row * cellHeight;
+
+    // Centering within the cell
+    const centerX = x + cellWidth / 2;
+    const centerY = y + cellHeight / 2;
+
+    // Draw Grid Box
+    doc.setDrawColor(150);
+    doc.rect(x, y, cellWidth, cellHeight);
+
+    // Draw QR Code
+    const qrX = centerX - qrSize / 2;
+    const qrY = centerY - qrSize / 2 - 6; // move slightly up to fit text below
+    doc.addImage(imgData, 'PNG', qrX, qrY, qrSize, qrSize);
+
+    // SKU (small text)
+    doc.setFontSize(6);
+    doc.text(product.sku, centerX, qrY + qrSize + 4, { align: 'center' });
+
+    // Product Name (larger text)
+    doc.setFontSize(8);
+    doc.text(product.name, centerX, qrY + qrSize + 9, { align: 'center' });
+  }
+
+  doc.save(`${product.sku}_QRCodes.pdf`);
+};
+
+
+// ============================================================================
+  // supplier import and exprot =================================
+  
+  const [showSupplierForm, setShowSupplierForm] = useState(false);
+
+const handleExportSuppliers = () => {
+  const dataToExport = suppliers.map(s => ({
+    Name: s.name,
+    ShopName: s.shopName,
+    Contact: s.contact,
+    Address: s.address,
+    Email: s.email
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Suppliers');
+  XLSX.writeFile(workbook, 'suppliers_backup.xlsx');
+};
+
+const handleImportSuppliers = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (evt) => {
+    const data = new Uint8Array(evt.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const importedData = XLSX.utils.sheet_to_json(sheet);
+
+    const formatted = importedData.map(item => ({
+      id: uuidv4(),
+      name: item.Name || '',
+      shopName: item.ShopName || '',
+      contact: item.Contact || '',
+      address: item.Address || '',
+      email: item.Email || ''
+    }));
+
+    setSuppliers([...suppliers, ...formatted]);
+  };
+
+  reader.readAsArrayBuffer(file);
+};
+  // ============================================================================================
+
+
+
+
+
+
 
   return (
     <div className="app-container">
+         
       <h1 className="dashboard-title">📦 Product Manager Dashboard</h1>
 
       <div className="tabs">
         <button onClick={() => setActiveTab('products')} className={`tab ${activeTab === 'products' ? 'active' : ''}`}>📋 Products</button>
         <button onClick={() => setActiveTab('orders')} className={`tab ${activeTab === 'orders' ? 'active' : ''}`}>🧾 Orders</button>
         <button onClick={() => setActiveTab('suppliers')} className={`tab ${activeTab === 'suppliers' ? 'active' : ''}`}>🏷️ Suppliers</button>
+
+          <button onClick={() => setActiveTab('profiles')} className={`tab ${activeTab === 'profiles' ? 'active' : ''}`}>
+  👤 Profiles
+</button>
+        
       </div>
           
       {activeTab === 'products' && (
@@ -703,19 +846,58 @@ const handleStartScanner = () => {
     size={48}
     ref={(el) => { if (el) qrRefs.current[p.sku] = el; }}
   />
-  <div style={{ fontSize: '12px' }} onClick={() => downloadQRCode(p.sku)}>
-    Click to Download
+                <div style={{ fontSize: '12px' }} onClick={() => {
+                  // downloadQRCode(p.sku)
+                  setSelectedQrData(p);   // p is product object
+    setQrDownloadCount(1);
+    setQrPopupVisible(true);
+                }}>
+                  <p style={{ fontSize: '9px', padding: '0', margin:'0' }}>{`${p.sku}`}</p>
+                  <p style={{ fontSize: '9px', padding: '0', margin:'0' }}>{`${p.name}`}</p>
+                </div>
+                
+
+                
+{/* qr code download pupup ==================================================== */}
+                {qrPopupVisible && (
+  <div className="custom-popup-overlay">
+    <div className="custom-popup">
+      <h3>Download QR Codes</h3>
+      <p>SKU: {selectedQrData?.sku}</p>
+      <p>Name: {selectedQrData?.name}</p>
+
+      <input
+        type="number"
+        min="1"
+        value={qrDownloadCount}
+        onChange={(e) => setQrDownloadCount(Number(e.target.value))}
+      />
+
+      <div className="popup-buttons">
+        <button onClick={() => {
+          generateQrPdf(selectedQrData, qrDownloadCount);
+          setQrPopupVisible(false);
+        }}>Download</button>
+        <button onClick={() => setQrPopupVisible(false)}>Cancel</button>
+      </div>
+    </div>
   </div>
+)}
+
+
+
+
+
+
+
+
 </td>
               <td>
                 <span className={`order-status ${p.ordered ? 'active' : 'inactive'}`}>
                   {p.ordered ? '❌ Ordered' : '✅ Not Ordered'}
                 </span>
               </td>
-              {/* <td>
-                <button className='productOrderBtn' onClick={() => handleOrder(p.id)}>🚚</button>
-                <button className='productDeleteBtn' onClick={() => handleDeleteProduct(p.id)}>🗑</button>
-              </td> */}
+          
               <td>
   <button
     className="productOrderBtn"
@@ -758,15 +940,49 @@ const handleStartScanner = () => {
       )}
 
       {activeTab === 'suppliers' && (
-       <div className="supplier-section">
-  <form onSubmit={handleAddSupplier} className="supplier-form">
+        <div className="supplier-section">
+          <div className="supplier-actions">
+  <button className="btn export" onClick={handleExportSuppliers}>⬇ Export Suppliers Excel</button>
+
+  <label className="btn import">
+    ⬆ Import Suppliers Excel
+    <input type="file" accept=".xlsx,.xls" onChange={handleImportSuppliers} hidden />
+  </label>
+          </div>
+          
+
+          <button className="btn toggle-form" onClick={() => setShowSupplierForm(!showSupplierForm)}>
+  {showSupplierForm ? 'Hide Form' : '➕ Create Supplier'}
+</button>
+
+{showSupplierForm && (
+  <div className="custom-popup-overlay">
+    <div className="custom-popup">
+      <h3>Create New Supplier</h3>
+
+      <input placeholder="Supplier Name" value={supplierForm.name} onChange={e => setSupplierForm({ ...supplierForm, name: e.target.value })} required />
+      <input placeholder="Shop Name" value={supplierForm.shopName} onChange={e => setSupplierForm({ ...supplierForm, shopName: e.target.value })} required />
+      <input placeholder="Contact Number" value={supplierForm.contact} onChange={e => setSupplierForm({ ...supplierForm, contact: e.target.value })} required />
+      <input placeholder="Address" value={supplierForm.address} onChange={e => setSupplierForm({ ...supplierForm, address: e.target.value })} required />
+      <input placeholder="Email" value={supplierForm.email} onChange={e => setSupplierForm({ ...supplierForm, email: e.target.value })} required />
+
+      <div className="popup-buttons">
+        <button onClick={(e) => { handleAddSupplier(e); setShowSupplierForm(false); }}>✔ Add Supplier</button>
+        <button onClick={() => setShowSupplierForm(false)}>✖ Cancel</button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+  {/* <form onSubmit={handleAddSupplier} className="supplier-form">
     <input placeholder="Supplier Name" value={supplierForm.name} onChange={e => setSupplierForm({ ...supplierForm, name: e.target.value })} required />
     <input placeholder="Shop Name" value={supplierForm.shopName} onChange={e => setSupplierForm({ ...supplierForm, shopName: e.target.value })} required />
     <input placeholder="Contact Number" value={supplierForm.contact} onChange={e => setSupplierForm({ ...supplierForm, contact: e.target.value })} required />
     <input placeholder="Address" value={supplierForm.address} onChange={e => setSupplierForm({ ...supplierForm, address: e.target.value })} required />
     <input placeholder="Email" value={supplierForm.email} onChange={e => setSupplierForm({ ...supplierForm, email: e.target.value })} required />
     <button type="submit" className="btn add-btn">➕ Add Supplier</button>
-  </form>
+  </form> */}
 
   <div className="supplier-grid">
   {suppliers.map(s => (
@@ -839,6 +1055,14 @@ const handleStartScanner = () => {
 </div>
 
       )}
+
+
+
+     
+   <ProfileTab activeTab={activeTab} setActiveTab={setActiveTab} />
+
+
+
     </div>
   );
 }
