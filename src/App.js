@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as XLSX from 'xlsx';
 import './css/ProductDashboard.css';
 import jsPDF from 'jspdf';
+ import JsBarcode from 'jsbarcode';
 import autoTable from 'jspdf-autotable';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import ProfileTab from './components/ProfileTab.jsx';
@@ -31,6 +32,7 @@ const [qrDownloadCount, setQrDownloadCount] = useState(1);
   
 
 
+  const [selectedOrders, setSelectedOrders] = useState([]);
 
 
   const [supplierForm, setSupplierForm] = useState({
@@ -403,6 +405,23 @@ const filteredSuppliers = suppliers.filter(supplier =>
   doc.save('invoice.pdf');
 
   // Reset ordered products after PDF generation
+  // setProducts(prev =>
+  //   prev.map(p => ({
+  //     ...p,
+  //     ordered: false,
+  //     quantity: 1,
+  //     orderedSupplierId: undefined,
+  //     orderedPrice: undefined
+  //   }))
+  // );
+};
+
+
+  //  all order delete button ======================================================
+  
+  const allOrderDeleteBtn = () => {
+    
+    // Reset ordered products after PDF generation
   setProducts(prev =>
     prev.map(p => ({
       ...p,
@@ -412,10 +431,9 @@ const filteredSuppliers = suppliers.filter(supplier =>
       orderedPrice: undefined
     }))
   );
-};
-
-
-
+    
+    setShowDeleteOrdersConfirm(false)
+  }
 
 
 
@@ -444,6 +462,7 @@ const loadImageBase64 = (url) => {
   
   // supplier delete confirm custom dialog function =========================================
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteOrdersConfirm, setShowDeleteOrdersConfirm] = useState(false);
 const [supplierToDelete, setSupplierToDelete] = useState(null);
   
   const handleDeleteClick = (supplier) => {
@@ -462,6 +481,11 @@ const confirmDelete = () => {
   setSupplierToDelete(null);
 };
 
+    const cancelDeleteOrders = () => {
+      setShowDeleteOrdersConfirm(false);
+      setSelectedOrders(null);
+  // setSupplierToDelete(null);
+};
 // supplier delete confirm custom dialog function ====================below=====================
 
 
@@ -519,6 +543,9 @@ const handleStartScanner = () => {
 
   //Qr code download ======================= number of ========================
   
+
+
+
 
   
 
@@ -669,9 +696,9 @@ const handleStartScanner = () => {
           <button onClick={() => setFormVisible(!formVisible)} className="btn toggle-form">
             {formVisible ? 'Hide Form' : '➕ Create Product'}
           </button>
-          <button onClick={handleExport} className="btn export">⬇ Export Excel</button>        
+          <button onClick={handleExport} className="btn export">⬆ Export Excel</button>        
              <label className="btn import">
-               ⬆ Import Excel
+               ⬇ Import Excel
                <input type="file" accept=".xlsx,.xls" onChange={handleImport} hidden />
           </label>  
           
@@ -761,12 +788,12 @@ const handleStartScanner = () => {
           <th>#</th>
           <th>Image</th>
           <th>Name</th>
-                <th>SKU</th>
+          <th>SKU</th>
           <th>Suppliers</th>
           <th>QR</th>
           <th>Status</th>
           <th>Actions</th>
-          <th>Delete</th>
+          <th>Order</th>
         </tr>
       </thead>
       <tbody>
@@ -894,15 +921,8 @@ const handleStartScanner = () => {
                   {p.ordered ? '❌ Ordered' : '✅ Not Ordered'}
                 </span>
               </td>
-          
               <td>
-  <button
-    className="productOrderBtn"
-    style={{ fontSize: '18px', padding: '6px 12px' }}
-    onClick={() => handleOrder(p.id)}
-  >
-    🚚 Order
-  </button>
+ 
 
   <button
     className="productUpdateBtn"
@@ -910,11 +930,8 @@ const handleStartScanner = () => {
     onClick={() => handleProductEditStart(p)}
   >
     ✏️ Update
-  </button>
-
-  
-              </td>
-              <td>
+                </button>
+                
                 <button
     className="productDeleteBtn"
     style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
@@ -924,7 +941,19 @@ const handleStartScanner = () => {
       }
     }}
   >
-    🗑
+    ❌
+  </button>
+
+  
+              </td>
+          
+              <td>
+                 <button
+    className="productOrderBtn"
+    style={{ fontSize: '18px', padding: '6px 12px' }}
+    onClick={() => handleOrder(p.id)}
+  >
+    🚚 Order
   </button>
               </td>
 
@@ -939,10 +968,10 @@ const handleStartScanner = () => {
       {activeTab === 'suppliers' && (
         <div className="supplier-section">
           <div className="supplier-actions">
-  <button className="btn export" onClick={handleExportSuppliers}>⬇ Export Suppliers Excel</button>
+  <button className="btn export" onClick={handleExportSuppliers}>⬆ Export Suppliers Excel</button>
 
   <label className="btn import">
-    ⬆ Import Suppliers Excel
+    ⬇ Import Suppliers Excel
     <input type="file" accept=".xlsx,.xls" onChange={handleImportSuppliers} hidden />
   </label>
           </div>
@@ -1028,6 +1057,18 @@ const handleStartScanner = () => {
       </div>
     </div>
   </div>
+      )}
+      
+       {showDeleteOrdersConfirm && (
+  <div className="custom-popup-overlay">
+    <div className="custom-popup">
+      <p>Are you sure you want to delete All Orders?</p>
+      <div className="mt-2 flex gap-2 justify-end">
+        <button onClick={cancelDeleteOrders} className="btn edit-btn">Cancel</button>
+        <button onClick={allOrderDeleteBtn} className="btn delete-btn">Delete</button>
+      </div>
+    </div>
+  </div>
 )}
 
       {activeTab === 'orders' && (
@@ -1040,7 +1081,13 @@ const handleStartScanner = () => {
             setShowPrintDialog(true)
           }} className="btn export">
   📄 Print All Orders PDF
-</button>
+          </button>
+          <button className='btn delete-btn' onClick={() => {
+
+           setShowDeleteOrdersConfirm(true)
+          }}>
+            All Order Delete
+          </button>
 
   {Object.entries(groupedOrders).map(([sid, orders]) => (
     <div key={sid}>
