@@ -755,6 +755,19 @@ export default function App() {
   // ============================================================================================
 
 
+  // add pagination add function ====================================
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentProducts = filtered.slice(indexOfFirstItem, indexOfLastItem);
+
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchSKU]);
 
 
 
@@ -895,172 +908,356 @@ export default function App() {
                   </td>
                 </tr>
               ) : (
+                  
                 
-                    filtered.map((p, index) => {
-                      // const supplierData = p.suppliers.map(s => {
-                      //   const found = suppliers.find(sup => sup.id === s.supplierId);
-                      //   return {
-                      //     name: found ? found.name : 'Unknown',
-                      //     price: s.price
-                      //   };
-                      // });
+                  currentProducts.map((p, index) => {
+                      
+                                    
 
-                      // const minPrice = Math.min(...supplierData.map(s => s.price));
-                      const supplierData = p.suppliers.map(s => {
-                        const found = suppliers.find(sup => sup.id === s.supplierId);
-                        return {
-                          name: found ? found.name : 'Unknown',
-                          price: parseFloat(s.price)
-                        };
-                      });
+                    // const minPrice = Math.min(...supplierData.map(s => s.price));
+                    const supplierData = p.suppliers.map(s => {
+                      const found = suppliers.find(sup => sup.id === s.supplierId);
+                      return {
+                        name: found ? found.name : 'Unknown',
+                        price: parseFloat(s.price)
+                      };
+                    })
 
-                      if (supplierData.length === 0) return <span>No Supplier</span>;
+                    if (supplierData.length === 0) return <span>No Supplier</span>;
 
-                      const minSupplier = supplierData.reduce((min, curr) => curr.price < min.price ? curr : min);
+                    const minSupplier = supplierData.reduce((min, curr) => curr.price < min.price ? curr : min);
+                    return (
+                      <tr key={p.id}>
+                        <td><h4>{index + 1}</h4></td>
+                        <td><img src={p.image} alt={p.name} style={{ width: '50px', height: '50px' }} /></td>
+                        <td><input value={p.name} onChange={e => handleEditProduct(p.id, { name: e.target.value })} /></td>
+                        <td>{p.sku}</td>
+                        <td>
 
+                          <table className="supplier-inner-table">
+                            <tbody>
+                              {(() => {
+                                const supplierData = p.suppliers.map(s => {
+                                  const found = suppliers.find(sup => sup.id === s.supplierId);
+                                  return {
+                                    name: found ? found.name : 'Unknown',
+                                    price: parseFloat(s.price)
+                                  };
+                                });
 
-                      return (
-                        <tr key={p.id}>
-                          <td><h4>{index + 1}</h4></td>
-                          <td><img src={p.image} alt={p.name} style={{ width: '50px', height: '50px' }} /></td>
-                          <td><input value={p.name} onChange={e => handleEditProduct(p.id, { name: e.target.value })} /></td>
-                          <td>{p.sku}</td>
-                          <td>
+                                if (supplierData.length === 0) return <tr><td>No Supplier</td></tr>;
 
-                            <table className="supplier-inner-table">
-                              <tbody>
-                                {(() => {
-                                  const supplierData = p.suppliers.map(s => {
-                                    const found = suppliers.find(sup => sup.id === s.supplierId);
-                                    return {
-                                      name: found ? found.name : 'Unknown',
-                                      price: parseFloat(s.price)
-                                    };
-                                  });
+                                const minPrice = Math.min(...supplierData.map(s => s.price));
 
-                                  if (supplierData.length === 0) return <tr><td>No Supplier</td></tr>;
-
-                                  const minPrice = Math.min(...supplierData.map(s => s.price));
-
-                                  return supplierData.map((s, idx) => (
-                                    <tr key={idx}>
-                                      <td className='supplierTBno'>{idx + 1}</td>
-                                      <td className='supplierTBname'>{s.name}</td>
-                                      <td style={{
-                                        backgroundColor: s.price === minPrice ? 'lightgreen' : 'transparent',
-                                        fontWeight: s.price === minPrice ? 'bold' : 'normal',
-                                        borderRadius: '4px',
-                                        padding: '2px 6px'
-                                      }}>
-                                        {s.price}/-
-                                      </td>
-                                    </tr>
-                                  ));
-                                })()}
-                              </tbody>
-                            </table>
-                          </td>
+                                return supplierData.map((s, idx) => (
+                                  <tr key={idx}>
+                                    <td className='supplierTBno'>{idx + 1}</td>
+                                    <td className='supplierTBname'>{s.name}</td>
+                                    <td style={{
+                                      backgroundColor: s.price === minPrice ? 'lightgreen' : 'transparent',
+                                      fontWeight: s.price === minPrice ? 'bold' : 'normal',
+                                      borderRadius: '4px',
+                                      padding: '2px 6px'
+                                    }}>
+                                      {s.price}/-
+                                    </td>
+                                  </tr>
+                                ));
+                              })()}
+                            </tbody>
+                          </table>
+                        </td>
 
 
 
-                          <td style={{ cursor: 'pointer' }}>
-                            {/* <QRCodeCanvas
-    value={p.sku}
-    size={48}
-    ref={(el) => { if (el) qrRefs.current[p.sku] = el; }}
+                        <td style={{ cursor: 'pointer' }}>
+                          {/* <QRCodeCanvas
+                value={p.sku}
+                size={48}
+                ref={(el) => { if (el) qrRefs.current[p.sku] = el; }}
 
-  /> */}
-                            {/* <BarcodeGen value={p.sku}/> */}
-                            <PrintBarcode value={p.sku} name={p.name} />
+              /> */}
+                          {/* <BarcodeGen value={p.sku}/> */}
+                          <PrintBarcode value={p.sku} name={p.name} />
 
-                            {/* <div style={{ fontSize: '12px' }} onClick={() => {
-                  // downloadQRCode(p.sku)
-                     setSelectedQrData(p);   // p is product object
-                    setQrDownloadCount(1);
-                      setQrPopupVisible(true);
-                }}> */}
-                            {/* <p style={{ fontSize: '9px', padding: '0', margin:'0' }}>{`${p.sku}`}</p> */}
-                            {/* <p style={{ fontSize: '12px', padding: '0', margin:'0' }}>{`${p.name}`}</p> */}
-                            {/* </div> */}
+                          {/* <div style={{ fontSize: '12px' }} onClick={() => {
+                              // downloadQRCode(p.sku)
+                                 setSelectedQrData(p);   // p is product object
+                                setQrDownloadCount(1);
+                                  setQrPopupVisible(true);
+                            }}> */}
+                          {/* <p style={{ fontSize: '9px', padding: '0', margin:'0' }}>{`${p.sku}`}</p> */}
+                          {/* <p style={{ fontSize: '12px', padding: '0', margin:'0' }}>{`${p.name}`}</p> */}
+                          {/* </div> */}
 
 
 
-                            {/* qr code download pupup ==================================================== */}
-                            {qrPopupVisible && (
-                              <div className="custom-popup-overlay">
-                                <div className="custom-popup">
-                                  <h3>Download QR Codes</h3>
-                                  <p>SKU: {selectedQrData?.sku}</p>
-                                  <p>Name: {selectedQrData?.name}</p>
+                          {/* qr code download pupup ==================================================== */}
+                          {qrPopupVisible && (
+                            <div className="custom-popup-overlay">
+                              <div className="custom-popup">
+                                <h3>Download QR Codes</h3>
+                                <p>SKU: {selectedQrData?.sku}</p>
+                                <p>Name: {selectedQrData?.name}</p>
 
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={qrDownloadCount}
-                                    onChange={(e) => setQrDownloadCount(Number(e.target.value))}
-                                  />
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={qrDownloadCount}
+                                  onChange={(e) => setQrDownloadCount(Number(e.target.value))}
+                                />
 
-                                  <div className="popup-buttons">
-                                    <button onClick={() => {
-                                      generateQrPdf(selectedQrData, qrDownloadCount);
-                                      setQrPopupVisible(false);
-                                    }}>Download</button>
-                                    <button onClick={() => setQrPopupVisible(false)}>Cancel</button>
-                                  </div>
+                                <div className="popup-buttons">
+                                  <button onClick={() => {
+                                    generateQrPdf(selectedQrData, qrDownloadCount);
+                                    setQrPopupVisible(false);
+                                  }}>Download</button>
+                                  <button onClick={() => setQrPopupVisible(false)}>Cancel</button>
                                 </div>
                               </div>
-                            )}
+                            </div>
+                          )}
 
 
-                          </td>
-                          <td>
-                            <span className={`order-status ${p.ordered ? 'active' : 'inactive'}`}>
-                              {p.ordered ? '❌ Ordered' : '✅ Not Ordered'}
-                            </span>
-                          </td>
-                          <td>
+                        </td>
+                        <td>
+                          <span className={`order-status ${p.ordered ? 'active' : 'inactive'}`}>
+                            {p.ordered ? '❌ Ordered' : '✅ Not Ordered'}
+                          </span>
+                        </td>
+                        <td>
 
 
-                            <button
-                              className="productUpdateBtn"
-                              style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
-                              onClick={() => handleProductEditStart(p)}
-                            >
-                              ✏️ Update
-                            </button>
+                          <button
+                            className="productUpdateBtn"
+                            style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
+                            onClick={() => handleProductEditStart(p)}
+                          >
+                            ✏️ Update
+                          </button>
 
-                            <button
-                              className="productDeleteBtn"
-                              style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
-                              onClick={() => {
-                                if (window.confirm('Are you sure you want to delete this product?')) {
-                                  handleDeleteProduct(p.id);
-                                }
-                              }}
-                            >
-                              ❌
-                            </button>
+                          <button
+                            className="productDeleteBtn"
+                            style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to delete this product?')) {
+                                handleDeleteProduct(p.id);
+                              }
+                            }}
+                          >
+                            ❌
+                          </button>
 
 
-                          </td>
+                        </td>
 
-                          <td>
-                            <button
-                              className="productOrderBtn"
-                              style={{ fontSize: '18px', padding: '6px 12px' }}
-                              onClick={() => handleOrder(p.id)}
-                            >
-                              🚚 Order
-                            </button>
-                          </td>
+                        <td>
+                          <button
+                            className="productOrderBtn"
+                            style={{ fontSize: '18px', padding: '6px 12px' }}
+                            onClick={() => handleOrder(p.id)}
+                          >
+                            🚚 Order
+                          </button>
+                        </td>
 
-                        </tr>
-                      );
-                    })
+                      </tr>
+                    )
+                  }
+              
+
+                
+  //                   filtered.map((p, index) => {
+  //                     // const supplierData = p.suppliers.map(s => {
+  //                     //   const found = suppliers.find(sup => sup.id === s.supplierId);
+  //                     //   return {
+  //                     //     name: found ? found.name : 'Unknown',
+  //                     //     price: s.price
+  //                     //   };
+  //                     // });
+
+  //                     // const minPrice = Math.min(...supplierData.map(s => s.price));
+  //                     const supplierData = p.suppliers.map(s => {
+  //                       const found = suppliers.find(sup => sup.id === s.supplierId);
+  //                       return {
+  //                         name: found ? found.name : 'Unknown',
+  //                         price: parseFloat(s.price)
+  //                       };
+  //                     });
+
+  //                     if (supplierData.length === 0) return <span>No Supplier</span>;
+
+  //                     const minSupplier = supplierData.reduce((min, curr) => curr.price < min.price ? curr : min);
+
+
+  //                     return (
+  //                       <tr key={p.id}>
+  //                         <td><h4>{index + 1}</h4></td>
+  //                         <td><img src={p.image} alt={p.name} style={{ width: '50px', height: '50px' }} /></td>
+  //                         <td><input value={p.name} onChange={e => handleEditProduct(p.id, { name: e.target.value })} /></td>
+  //                         <td>{p.sku}</td>
+  //                         <td>
+
+  //                           <table className="supplier-inner-table">
+  //                             <tbody>
+  //                               {(() => {
+  //                                 const supplierData = p.suppliers.map(s => {
+  //                                   const found = suppliers.find(sup => sup.id === s.supplierId);
+  //                                   return {
+  //                                     name: found ? found.name : 'Unknown',
+  //                                     price: parseFloat(s.price)
+  //                                   };
+  //                                 });
+
+  //                                 if (supplierData.length === 0) return <tr><td>No Supplier</td></tr>;
+
+  //                                 const minPrice = Math.min(...supplierData.map(s => s.price));
+
+  //                                 return supplierData.map((s, idx) => (
+  //                                   <tr key={idx}>
+  //                                     <td className='supplierTBno'>{idx + 1}</td>
+  //                                     <td className='supplierTBname'>{s.name}</td>
+  //                                     <td style={{
+  //                                       backgroundColor: s.price === minPrice ? 'lightgreen' : 'transparent',
+  //                                       fontWeight: s.price === minPrice ? 'bold' : 'normal',
+  //                                       borderRadius: '4px',
+  //                                       padding: '2px 6px'
+  //                                     }}>
+  //                                       {s.price}/-
+  //                                     </td>
+  //                                   </tr>
+  //                                 ));
+  //                               })()}
+  //                             </tbody>
+  //                           </table>
+  //                         </td>
+
+
+
+  //                         <td style={{ cursor: 'pointer' }}>
+  //                           {/* <QRCodeCanvas
+  //   value={p.sku}
+  //   size={48}
+  //   ref={(el) => { if (el) qrRefs.current[p.sku] = el; }}
+
+  // /> */}
+  //                           {/* <BarcodeGen value={p.sku}/> */}
+  //                           <PrintBarcode value={p.sku} name={p.name} />
+
+  //                           {/* <div style={{ fontSize: '12px' }} onClick={() => {
+  //                 // downloadQRCode(p.sku)
+  //                    setSelectedQrData(p);   // p is product object
+  //                   setQrDownloadCount(1);
+  //                     setQrPopupVisible(true);
+  //               }}> */}
+  //                           {/* <p style={{ fontSize: '9px', padding: '0', margin:'0' }}>{`${p.sku}`}</p> */}
+  //                           {/* <p style={{ fontSize: '12px', padding: '0', margin:'0' }}>{`${p.name}`}</p> */}
+  //                           {/* </div> */}
+
+
+
+  //                           {/* qr code download pupup ==================================================== */}
+  //                           {qrPopupVisible && (
+  //                             <div className="custom-popup-overlay">
+  //                               <div className="custom-popup">
+  //                                 <h3>Download QR Codes</h3>
+  //                                 <p>SKU: {selectedQrData?.sku}</p>
+  //                                 <p>Name: {selectedQrData?.name}</p>
+
+  //                                 <input
+  //                                   type="number"
+  //                                   min="1"
+  //                                   value={qrDownloadCount}
+  //                                   onChange={(e) => setQrDownloadCount(Number(e.target.value))}
+  //                                 />
+
+  //                                 <div className="popup-buttons">
+  //                                   <button onClick={() => {
+  //                                     generateQrPdf(selectedQrData, qrDownloadCount);
+  //                                     setQrPopupVisible(false);
+  //                                   }}>Download</button>
+  //                                   <button onClick={() => setQrPopupVisible(false)}>Cancel</button>
+  //                                 </div>
+  //                               </div>
+  //                             </div>
+  //                           )}
+
+
+  //                         </td>
+  //                         <td>
+  //                           <span className={`order-status ${p.ordered ? 'active' : 'inactive'}`}>
+  //                             {p.ordered ? '❌ Ordered' : '✅ Not Ordered'}
+  //                           </span>
+  //                         </td>
+  //                         <td>
+
+
+  //                           <button
+  //                             className="productUpdateBtn"
+  //                             style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
+  //                             onClick={() => handleProductEditStart(p)}
+  //                           >
+  //                             ✏️ Update
+  //                           </button>
+
+  //                           <button
+  //                             className="productDeleteBtn"
+  //                             style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
+  //                             onClick={() => {
+  //                               if (window.confirm('Are you sure you want to delete this product?')) {
+  //                                 handleDeleteProduct(p.id);
+  //                               }
+  //                             }}
+  //                           >
+  //                             ❌
+  //                           </button>
+
+
+  //                         </td>
+
+  //                         <td>
+  //                           <button
+  //                             className="productOrderBtn"
+  //                             style={{ fontSize: '18px', padding: '6px 12px' }}
+  //                             onClick={() => handleOrder(p.id)}
+  //                           >
+  //                             🚚 Order
+  //                           </button>
+  //                         </td>
+
+  //                       </tr>
+  //                     );
+  //                   }
+                    )
                 
               )}
             </tbody>
           </table>
+
+          
+          {/* pagination add ===================================================== */}
+
+          <div className="pagination-controls">
+            <button
+              className='btn'
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+              ⬅ Prev
+            </button>
+
+            <span style={{ margin: '0 10px' }}>
+              Page {currentPage} of {Math.ceil(filtered.length / itemsPerPage)}
+            </span>
+
+            <button
+              className='btn'
+              onClick={() => setCurrentPage(prev => (prev < Math.ceil(filtered.length / itemsPerPage) ? prev + 1 : prev))}
+              disabled={currentPage === Math.ceil(filtered.length / itemsPerPage)}
+            >
+              Next ➡
+            </button>
+          </div>
+
+
         </>
       )}
 
