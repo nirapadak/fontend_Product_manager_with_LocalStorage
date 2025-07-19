@@ -1,15 +1,13 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { QRCodeCanvas } from 'qrcode.react';
+
 import { v4 as uuidv4 } from 'uuid';
 import * as XLSX from 'xlsx';
 import './css/ProductDashboard.css';
 import jsPDF from 'jspdf';
-import JsBarcode from 'jsbarcode';
 import autoTable from 'jspdf-autotable';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import ProfileTab from './components/ProfileTab.jsx';
-import BarcodeGen from './components/BarcodeGen.jsx';
 import PrintBarcode from './components/PrintBarcode.jsx';
 
 const LOCAL_KEY_PRODUCTS = 'product_data';
@@ -43,6 +41,8 @@ export default function App() {
     contact: '',
     address: '',
     email: '',
+    bankName: '',
+    AccNo: '',
     id: ''
   });
 
@@ -52,7 +52,10 @@ export default function App() {
     shopName: '',
     contact: '',
     address: '',
-    email: ''
+    email: '',
+    bankName: '',
+    AccNo: '',
+    
   });
 
 
@@ -161,10 +164,12 @@ export default function App() {
           shopName: supplierForm.shopName.trim(),
           contact: supplierForm.contact.trim(),
           address: supplierForm.address.trim(),
-          email: supplierForm.email.trim()
+          email: supplierForm.email.trim(),
+          bankName: supplierForm.bankName.trim(),
+          AccNo: supplierForm.AccNo.trim(),
         }
       ]);
-      setSupplierForm({ name: '', shopName: '', contact: '', address: '', email: '', id: '' });
+      setSupplierForm({ name: '', shopName: '', contact: '', address: '', email: '', bankName:'', AccNo: '', id: '' });
     }
   };
 
@@ -199,14 +204,16 @@ export default function App() {
       shopName: supplier.shopName,
       contact: supplier.contact,
       address: supplier.address,
-      email: supplier.email
+      email: supplier.email,
+      bankName: supplier.bankName,
+      AccNo: supplier.AccNo
     });
   };
 
   const handleSaveEditedSupplier = () => {
     setSuppliers(suppliers.map(s => s.id === editingSupplierId ? { ...s, ...editSupplierForm } : s));
     setEditingSupplierId(null);
-    setEditSupplierForm({ name: '', shopName: '', contact: '', address: '', email: '' });
+    setEditSupplierForm({ name: '', shopName: '', contact: '', address: '', email: '', bankName: '', AccNo: '' });
   };
 
 
@@ -284,7 +291,9 @@ export default function App() {
               shopName: '',
               contact: '',
               address: '',
-              email: ''
+              email: '',
+              bankName: '',
+              AccNo: '',
             }]);
           }
 
@@ -327,29 +336,47 @@ export default function App() {
       const supplierName = supplier?.name || `Supplier ${sid}`;
 
       // --- Title ---
-      doc.setFontSize(16);
-      // doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
       doc.text(`Order Invoice Record`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+      doc.setLineWidth(0.5);  // Optional: set line thickness
+      doc.line(14, 19, doc.internal.pageSize.getWidth() - 14, 19);  
+
+      // doc.text(`---------------------------------------------------------------------------`, doc.internal.pageSize.getWidth() / 2, 19, { align: 'center' });
 
       // --- Supplier Info (Left) ---
       doc.setFontSize(10);
-      doc.text(`Supplier: ${supplierName}`, 14, 22);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Supplier: ${supplierName}`, 14, 26);
       if (supplier) {
-        doc.text(`Shop: ${supplier.shopName}`, 14, 34);
-        doc.text(`Contact: ${supplier.contact}`, 14, 28);
-        doc.text(`Address: ${supplier.address}`, 14, 40);
-        doc.text(`Email: ${supplier.email}`, 14, 46);
+        doc.text(`Shop: ${supplier.shopName}`, 14, 38);
+        doc.text(`Contact: ${supplier.contact}`, 14, 32);
+        doc.text(`Address: ${supplier.address}`, 14, 44);
+        doc.text(`Email: ${supplier.email}`, 14, 50);
+        doc.text(`BANK: ${supplier.bankName}`, 14, 56)
+        doc.text(`AC/NO: ${supplier.AccNo}`, 14, 62)
+        
+    
+        // doc.text(`PRODUCT DETAILS TABLE:`,  14, 68)
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('PRODUCT DETAILS TABLE:', doc.internal.pageSize.getWidth() / 2, 72, { align: 'center' });
+        doc.setFont('helvetica', 'normal');  // Reset to normal
+        doc.setFontSize(10);
+
+        
+
       }
 
       // --- Buyer Info (Right) ---
       if (buyer) {
         const pageWidth = doc.internal.pageSize.getWidth();
         const rightX = pageWidth - 80;
-        doc.text(`Buyer: ${buyer.name}`, rightX, 22);
-        doc.text(`Company: ${buyer.company}`, rightX, 34);
-        doc.text(`Contact: ${buyer.phone}`, rightX, 28);
-        doc.text(`Address: ${buyer.address}`, rightX, 46);
-        doc.text(`Email: ${buyer.email}`, rightX, 40);
+        doc.text(`Buyer: ${buyer.name}`, rightX, 26);
+        doc.text(`Company: ${buyer.company}`, rightX, 38);
+        doc.text(`Contact: ${buyer.phone}`, rightX, 32);
+        doc.text(`Address: ${buyer.address}`, rightX, 44);
+        doc.text(`Email: ${buyer.email}`, rightX, 50);
       }
 
       // --- Product Table ---
@@ -378,7 +405,7 @@ export default function App() {
       );
 
       autoTable(doc, {
-        startY: 52,
+        startY: 74,
         head: [['SL', 'Image', 'Product Name', 'SKU', 'Unit', 'Qty', 'Unit Price', 'Total']],
         body: loadedRows,
         theme: 'grid',
@@ -386,9 +413,9 @@ export default function App() {
         columnStyles: {
           0: { cellWidth: 10 },
           1: { cellWidth: 14 },
-          2: { cellWidth: 40 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 30 },
+          2: { cellWidth: 70 },
+          3: { cellWidth: 15 },
+          4: { cellWidth: 15 },
           5: { cellWidth: 10 },
           6: { cellWidth: 20 },
           7: { cellWidth: 20 },
@@ -420,6 +447,7 @@ export default function App() {
       const finalY = doc.lastAutoTable.finalY || 60;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
+      doc.text(`Date:`, 14, finalY + 10)
       // doc.text(`Date: ${formattedDate}`, 14, finalY + 10)
       // doc.text(`Total Quantity: ${totalQty}`, 14, finalY + 10);
       doc.text(`Total Quantity: ${totalQty}`, 14, finalY + 16);
@@ -1067,10 +1095,14 @@ export default function App() {
                 <h3>Create New Supplier</h3>
 
                 <input placeholder="Supplier Name" value={supplierForm.name} onChange={e => setSupplierForm({ ...supplierForm, name: e.target.value })} required />
-                <input placeholder="Shop Name" value={supplierForm.shopName} onChange={e => setSupplierForm({ ...supplierForm, shopName: e.target.value })} required />
+                <input placeholder="Shop Name" value={supplierForm.shopName} onChange={e => setSupplierForm({ ...supplierForm, shopName: e.target.value })}  />
                 <input placeholder="Contact Number" value={supplierForm.contact} onChange={e => setSupplierForm({ ...supplierForm, contact: e.target.value })} required />
                 <input placeholder="Address" value={supplierForm.address} onChange={e => setSupplierForm({ ...supplierForm, address: e.target.value })} required />
-                <input placeholder="Email" value={supplierForm.email} onChange={e => setSupplierForm({ ...supplierForm, email: e.target.value })} required />
+                <input placeholder="Email" value={supplierForm.email} onChange={e => setSupplierForm({ ...supplierForm, email: e.target.value })} />
+
+                <input placeholder="Bank name" value={supplierForm.bankName} onChange={e => setSupplierForm({ ...supplierForm, bankName: e.target.value })} />
+
+                <input placeholder="Account No" value={supplierForm.AccNo} onChange={e => setSupplierForm({ ...supplierForm, AccNo: e.target.value })}  />
 
                 <div className="popup-buttons">
                   <button className="btn" onClick={(e) => { handleAddSupplier(e); setShowSupplierForm(false); }}>✔ Add Supplier</button>
@@ -1093,6 +1125,11 @@ export default function App() {
                     <input value={editSupplierForm.contact} onChange={e => setEditSupplierForm({ ...editSupplierForm, contact: e.target.value })} />
                     <input value={editSupplierForm.address} onChange={e => setEditSupplierForm({ ...editSupplierForm, address: e.target.value })} />
                     <input value={editSupplierForm.email} onChange={e => setEditSupplierForm({ ...editSupplierForm, email: e.target.value })} />
+
+                    <input value={editSupplierForm.bankName} onChange={e => setEditSupplierForm({ ...editSupplierForm, bankName: e.target.value })} />
+
+                    <input value={editSupplierForm.AccNo} onChange={e => setEditSupplierForm({ ...editSupplierForm, AccNo: e.target.value })} />
+
                     <button onClick={handleSaveEditedSupplier} className="btn save-btn">✔ Save</button>
                     <button onClick={() => setEditingSupplierId(null)} className="btn cancel-btn">✖ Cancel</button>
                   </>
@@ -1102,7 +1139,10 @@ export default function App() {
                     <p><strong>Shop:</strong> {s.shopName}</p>
                     <p><strong>Contact:</strong> {s.contact}</p>
                     <p><strong>Address:</strong> {s.address}</p>
-                    <p><strong>Email:</strong> {s.email}</p>
+                      <p><strong>Email:</strong> {s.email}</p>
+                      <p><strong>BANK :</strong> {s.bankName}</p>
+                      <p><strong>ACCOUNT NO:</strong> {s.AccNo}</p>
+                      
                     <button onClick={() => handleStartEditSupplier(s)} className="btn edit-btn">✏ Edit</button>
                     {/* <button onClick={() => handleDeleteSupplier(s.id)} className="btn delete-btn">🗑 Delete</button> */}
                     <button onClick={() => handleDeleteClick(s)} className="btn delete-btn">Delete</button>
