@@ -227,7 +227,10 @@ export default function App() {
   );
 
 
-  const filtered = products.filter(p => p.sku.toLowerCase().includes(searchSKU.toLowerCase()));
+  const filtered = products.filter(p =>
+    p.sku.toLowerCase().includes(searchSKU.toLowerCase()) ||
+    p.name.toLowerCase().includes(searchSKU.toLowerCase())
+  );
   const orderedProducts = products.filter(p => p.ordered);
   const groupedOrders = orderedProducts.reduce((acc, product) => {
     const sid = product.orderedSupplierId;
@@ -349,12 +352,25 @@ export default function App() {
       doc.setFont('helvetica', 'normal');
       doc.text(`Supplier: ${supplierName}`, 14, 26);
       if (supplier) {
-        doc.text(`Shop: ${supplier.shopName}`, 14, 38);
-        doc.text(`Contact: ${supplier.contact}`, 14, 32);
-        doc.text(`Address: ${supplier.address}`, 14, 44);
-        doc.text(`Email: ${supplier.email}`, 14, 50);
-        doc.text(`BANK: ${supplier.bankName}`, 14, 56)
-        doc.text(`AC/NO: ${supplier.AccNo}`, 14, 62)
+        doc.text(`Contact: ${supplier.contact}`, 14, 30);
+        doc.text(`Shop: ${supplier.shopName}`, 14, 34);
+
+
+
+        const y = 38;
+        const addressLines = doc.splitTextToSize(`Address: ${supplier.address}`, 80);
+        doc.text(addressLines, 14, y);
+
+        const nextY = y + (addressLines.length * 4);  // Move Y for next section
+        doc.text(`Email: ${supplier.email}`, 14, nextY);
+
+
+
+
+        // doc.text(`Address: ${supplier.address}`, 14, 44);
+        // doc.text(`Email: ${supplier.email}`, 14, 50);
+        doc.text(`BANK: ${supplier.bankName}`, 14, nextY+4)
+        doc.text(`AC/NO: ${supplier.AccNo}`, 14, nextY+8)
         
     
         // doc.text(`PRODUCT DETAILS TABLE:`,  14, 68)
@@ -373,10 +389,20 @@ export default function App() {
         const pageWidth = doc.internal.pageSize.getWidth();
         const rightX = pageWidth - 80;
         doc.text(`Buyer: ${buyer.name}`, rightX, 26);
-        doc.text(`Company: ${buyer.company}`, rightX, 38);
-        doc.text(`Contact: ${buyer.phone}`, rightX, 32);
-        doc.text(`Address: ${buyer.address}`, rightX, 44);
-        doc.text(`Email: ${buyer.email}`, rightX, 50);
+        doc.text(`Company: ${buyer.company}`, rightX, 30);
+        doc.text(`Contact: ${buyer.phone}`, rightX, 34);
+
+
+        const y = 38;
+        const addressLines = doc.splitTextToSize(`Address: ${buyer.address}`, 60);
+        doc.text(addressLines, rightX, y);
+
+        const nextY = y + (addressLines.length * 4);  // Move Y for next section
+        doc.text(`Email: ${supplier.email}`, rightX, nextY);
+
+
+        // doc.text(`Address: ${buyer.address}`, rightX, 44);
+        // doc.text(`Email: ${buyer.email}`, rightX, 50);
       }
 
       // --- Product Table ---
@@ -792,7 +818,7 @@ export default function App() {
       {activeTab === 'products' && (
         <>
           <div className='ProductPageTopBar'>
-          <input placeholder="Search by SKU..." value={searchSKU} onChange={e => setSearchSKU(e.target.value)} className="search-input" />
+          <input placeholder="Search by Name or SKU..." value={searchSKU} onChange={e => setSearchSKU(e.target.value)} className="search-input" />
           <button className="btn scan-btn" onClick={handleStartScanner}>📷 Scan QR</button>
           {scannerVisible && <div id="Bar-reader" style={{ width: '300px', margin: '10px auto' }}></div>}
 
@@ -858,9 +884,10 @@ export default function App() {
                         type="number"
                         placeholder="Price"
                         value={s.price}
-                        onChange={e => handleSupplierChange(i, 'price', e.target.value)}
+                        onChange={e => handleSupplierChange(i, 'price', parseFloat(e.target.value) || 0)}
                         required
                         min="0"
+                        step="0.01"
                       />
 
                       {form.suppliers.length > 1 && (
