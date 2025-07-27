@@ -31,7 +31,6 @@ export default function App() {
   const [profiles, setProfiles] = useState([]);
 
 
-
   const [selectedOrders, setSelectedOrders] = useState([]);
 
 
@@ -169,7 +168,7 @@ export default function App() {
           AccNo: supplierForm.AccNo.trim(),
         }
       ]);
-      setSupplierForm({ name: '', shopName: '', contact: '', address: '', email: '', bankName:'', AccNo: '', id: '' });
+      setSupplierForm({ name: '', shopName: '', contact: '', address: '', email: '', bankName: '', AccNo: '', id: '' });
     }
   };
 
@@ -193,6 +192,114 @@ export default function App() {
       setProfiles(JSON.parse(storedProfiles));
     }
   };
+
+
+  //  select Product function add ==============================================================
+
+  // select product to delete option state ==================================
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [ArrayProduct, setArrayProduct] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+
+
+
+  
+// individual slected and delete ===============================================
+
+  const handleSelectProduct = (id) => {
+    let updated;
+    if (selectedProducts.includes(id)) {
+      updated = selectedProducts.filter(pid => pid !== id);
+    } else {
+      updated = [...selectedProducts, id];
+    }
+    // console.log(id)
+    setSelectedProducts(updated);
+    setSelectAll(updated.length === products.length);
+    setArrayProduct(updated)
+  };
+
+
+  const deleteProductsByIds = () => {
+ 
+  
+      if (selectedProducts.length === 0) {
+        alert("No products selected to delete.");
+        return;
+      }
+
+      if (window.confirm(`Are you sure you want to delete ${selectedProducts.length} products?`)) {
+        // Remove products whose ID is in selectedProducts / ArrayProduct
+        const updated = products.filter(p => !ArrayProduct.includes(p.id));
+
+        // Update state and localStorage
+        setProducts(updated);
+        localStorage.setItem(LOCAL_KEY_PRODUCTS, JSON.stringify(updated));
+
+        setSelectedProducts([]);
+        setSelectAll(false);
+      }
+  
+    
+  };
+
+// All select function =================================================
+
+  const handleSelectAll = () => {
+    if (selectedProducts.length === products.length) {
+      // Unselect all
+      setSelectedProducts([]);
+    } else {
+      // Select all
+      const allIds = products.map(p => p.id);
+      setSelectedProducts(allIds);
+      setArrayProduct(allIds);
+      
+    }
+  };
+
+
+
+
+  // Select to export function ==================================================================================
+
+
+  const ImportByIds = ()=>{
+  
+    // console.log(ArrayProduct)
+
+      // Example: this should be passed or come from state
+      // const selectedProductIds = ['123', '456']; // You can replace this with your actual state variable
+
+      const dataToExport = products
+        .filter(p => ArrayProduct.includes(p.id)) // Export only selected by ID
+        .map(p => ({
+          id: p.id,
+          Name: p.name,
+          SKU: p.sku,
+          Image: p.image,
+          Suppliers: p.suppliers.map(s => `${s.supplierId}:${s.price}`).join(', ')
+        }));
+
+      if (dataToExport.length === 0) {
+        alert("No products match the selected IDs.");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
+      XLSX.writeFile(workbook, 'product_backup.xlsx');
+  
+
+
+  }
+
+
+
+  //  select Product function add ==============================================================
+
+
 
 
 
@@ -228,8 +335,8 @@ export default function App() {
 
 
   const filtered = products.filter(p =>
-    p.sku.toLowerCase().includes(searchSKU.toLowerCase()) ||
-    p.name.toLowerCase().includes(searchSKU.toLowerCase())
+    p.sku.toLowerCase().includes(searchSKU.trim().toLowerCase()) ||
+    p.name.toLowerCase().includes(searchSKU.trim().toLowerCase())
   );
   const orderedProducts = products.filter(p => p.ordered);
   const groupedOrders = orderedProducts.reduce((acc, product) => {
@@ -826,11 +933,38 @@ export default function App() {
           <button onClick={() => setFormVisible(!formVisible)} className="btn toggle-form">
             {formVisible ? 'Hide Form' : '➕ Create Product'}
           </button>
-          <button onClick={handleExport} className="btn export">⬆ Export Excel</button>
+          {/* <button onClick={handleExport} className="btn export">⬆ Export</button> */}
           <label className="btn import">
-            ⬇ Import Excel
+            ⬇ Import
             <input type="file" accept=".xlsx,.xls" onChange={handleImport} hidden />
-          </label>
+            </label>
+            
+            {selectedProducts.length > 0 && (
+
+              <button
+                // onClick={handleDeleteSelected}
+                onClick={ImportByIds}
+                className="btn export"
+              >
+                ⬆️ Export ({selectedProducts.length})
+              </button>
+
+            )}
+
+
+            {selectedProducts.length > 0 && (
+           
+                <button
+                  // onClick={handleDeleteSelected}
+                onClick={deleteProductsByIds}
+                  className="btn delete-btn"
+                >
+                  🗑️ Delete ({selectedProducts.length})
+                </button>
+          
+            )}
+
+           
 
 
           </div>
@@ -916,6 +1050,17 @@ export default function App() {
           <table className="product-table">
             <thead>
               <tr>
+                
+
+                <th className="p-2 border">
+                  <input
+                    type="checkbox"
+                    checked={selectedProducts.length === products.length}
+                    onChange={handleSelectAll}
+                  />
+                </th>
+
+                
                 <th>#</th>
                 <th>Image</th>
                 <th>Name</th>
@@ -955,6 +1100,16 @@ export default function App() {
                     const minSupplier = supplierData.reduce((min, curr) => curr.price < min.price ? curr : min);
                     return (
                       <tr key={p.id}>
+                        
+                         <td className="p-2 border">
+                                      <input
+                                        type="checkbox"
+                            checked={selectedProducts.includes(p.id)}
+                            onChange={() => handleSelectProduct(p.id)}
+                                      />
+                                    </td>
+
+
                         <td><h4>{index + 1}</h4></td>
                         <td><img src={p.image} alt={p.name} style={{ width: '50px', height: '50px' }} /></td>
                         <td><input value={p.name} onChange={e => handleEditProduct(p.id, { name: e.target.value })} /></td>
@@ -1093,168 +1248,7 @@ export default function App() {
                   }
               
 
-                
-  //                   filtered.map((p, index) => {
-  //                     // const supplierData = p.suppliers.map(s => {
-  //                     //   const found = suppliers.find(sup => sup.id === s.supplierId);
-  //                     //   return {
-  //                     //     name: found ? found.name : 'Unknown',
-  //                     //     price: s.price
-  //                     //   };
-  //                     // });
-
-  //                     // const minPrice = Math.min(...supplierData.map(s => s.price));
-  //                     const supplierData = p.suppliers.map(s => {
-  //                       const found = suppliers.find(sup => sup.id === s.supplierId);
-  //                       return {
-  //                         name: found ? found.name : 'Unknown',
-  //                         price: parseFloat(s.price)
-  //                       };
-  //                     });
-
-  //                     if (supplierData.length === 0) return <span>No Supplier</span>;
-
-  //                     const minSupplier = supplierData.reduce((min, curr) => curr.price < min.price ? curr : min);
-
-
-  //                     return (
-  //                       <tr key={p.id}>
-  //                         <td><h4>{index + 1}</h4></td>
-  //                         <td><img src={p.image} alt={p.name} style={{ width: '50px', height: '50px' }} /></td>
-  //                         <td><input value={p.name} onChange={e => handleEditProduct(p.id, { name: e.target.value })} /></td>
-  //                         <td>{p.sku}</td>
-  //                         <td>
-
-  //                           <table className="supplier-inner-table">
-  //                             <tbody>
-  //                               {(() => {
-  //                                 const supplierData = p.suppliers.map(s => {
-  //                                   const found = suppliers.find(sup => sup.id === s.supplierId);
-  //                                   return {
-  //                                     name: found ? found.name : 'Unknown',
-  //                                     price: parseFloat(s.price)
-  //                                   };
-  //                                 });
-
-  //                                 if (supplierData.length === 0) return <tr><td>No Supplier</td></tr>;
-
-  //                                 const minPrice = Math.min(...supplierData.map(s => s.price));
-
-  //                                 return supplierData.map((s, idx) => (
-  //                                   <tr key={idx}>
-  //                                     <td className='supplierTBno'>{idx + 1}</td>
-  //                                     <td className='supplierTBname'>{s.name}</td>
-  //                                     <td style={{
-  //                                       backgroundColor: s.price === minPrice ? 'lightgreen' : 'transparent',
-  //                                       fontWeight: s.price === minPrice ? 'bold' : 'normal',
-  //                                       borderRadius: '4px',
-  //                                       padding: '2px 6px'
-  //                                     }}>
-  //                                       {s.price}/-
-  //                                     </td>
-  //                                   </tr>
-  //                                 ));
-  //                               })()}
-  //                             </tbody>
-  //                           </table>
-  //                         </td>
-
-
-
-  //                         <td style={{ cursor: 'pointer' }}>
-  //                           {/* <QRCodeCanvas
-  //   value={p.sku}
-  //   size={48}
-  //   ref={(el) => { if (el) qrRefs.current[p.sku] = el; }}
-
-  // /> */}
-  //                           {/* <BarcodeGen value={p.sku}/> */}
-  //                           <PrintBarcode value={p.sku} name={p.name} />
-
-  //                           {/* <div style={{ fontSize: '12px' }} onClick={() => {
-  //                 // downloadQRCode(p.sku)
-  //                    setSelectedQrData(p);   // p is product object
-  //                   setQrDownloadCount(1);
-  //                     setQrPopupVisible(true);
-  //               }}> */}
-  //                           {/* <p style={{ fontSize: '9px', padding: '0', margin:'0' }}>{`${p.sku}`}</p> */}
-  //                           {/* <p style={{ fontSize: '12px', padding: '0', margin:'0' }}>{`${p.name}`}</p> */}
-  //                           {/* </div> */}
-
-
-
-  //                           {/* qr code download pupup ==================================================== */}
-  //                           {qrPopupVisible && (
-  //                             <div className="custom-popup-overlay">
-  //                               <div className="custom-popup">
-  //                                 <h3>Download QR Codes</h3>
-  //                                 <p>SKU: {selectedQrData?.sku}</p>
-  //                                 <p>Name: {selectedQrData?.name}</p>
-
-  //                                 <input
-  //                                   type="number"
-  //                                   min="1"
-  //                                   value={qrDownloadCount}
-  //                                   onChange={(e) => setQrDownloadCount(Number(e.target.value))}
-  //                                 />
-
-  //                                 <div className="popup-buttons">
-  //                                   <button onClick={() => {
-  //                                     generateQrPdf(selectedQrData, qrDownloadCount);
-  //                                     setQrPopupVisible(false);
-  //                                   }}>Download</button>
-  //                                   <button onClick={() => setQrPopupVisible(false)}>Cancel</button>
-  //                                 </div>
-  //                               </div>
-  //                             </div>
-  //                           )}
-
-
-  //                         </td>
-  //                         <td>
-  //                           <span className={`order-status ${p.ordered ? 'active' : 'inactive'}`}>
-  //                             {p.ordered ? '❌ Ordered' : '✅ Not Ordered'}
-  //                           </span>
-  //                         </td>
-  //                         <td>
-
-
-  //                           <button
-  //                             className="productUpdateBtn"
-  //                             style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
-  //                             onClick={() => handleProductEditStart(p)}
-  //                           >
-  //                             ✏️ Update
-  //                           </button>
-
-  //                           <button
-  //                             className="productDeleteBtn"
-  //                             style={{ fontSize: '16px', padding: '5px 10px', marginLeft: '5px' }}
-  //                             onClick={() => {
-  //                               if (window.confirm('Are you sure you want to delete this product?')) {
-  //                                 handleDeleteProduct(p.id);
-  //                               }
-  //                             }}
-  //                           >
-  //                             ❌
-  //                           </button>
-
-
-  //                         </td>
-
-  //                         <td>
-  //                           <button
-  //                             className="productOrderBtn"
-  //                             style={{ fontSize: '18px', padding: '6px 12px' }}
-  //                             onClick={() => handleOrder(p.id)}
-  //                           >
-  //                             🚚 Order
-  //                           </button>
-  //                         </td>
-
-  //                       </tr>
-  //                     );
-  //                   }
+  
                     )
                 
               )}
